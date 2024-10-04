@@ -1,0 +1,38 @@
+includes:
+    - phar://phpstan.phar/conf/config.level8.neon
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+    - ./vendor/phpstan/phpstan-phpunit/extension.neon
+    - ./vendor/phpstan/phpstan-phpunit/rules.neon
+    - ./vendor/phpstan/phpstan-strict-rules/rules.neon
+    - ./vendor/shipmonk/phpstan-rules/rules.neon
+
+parameters:
+    paths:
+        - src
+        - tests
+    checkMissingCallableSignature: true
+    checkUninitializedProperties: true
+    checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    checkBenevolentUnionTypes: true
+
+    exceptions:
+        check:
+            missingCheckedExceptionInThrows: true
+            tooWideThrowType: true
+        implicitThrows: false
+        checkedExceptionClasses:
+            - ShipMonk\DoctrineEntityPreloader\Exception\RuntimeException
+
+    ignoreErrors:
+        -
+            identifier: 'property.onlyWritten'
+            path: 'tests/Fixtures/Synthetic'
+        -
+            identifier: 'property.uninitialized'
+            path: 'tests/Fixtures/Synthetic'
+        -
+            identifier: 'property.unused'
+            path: 'tests/Fixtures/Synthetic'
+        -
+            identifier: 'property.unusedType'
+            path: 'tests/Fixtures/Synthetic'
