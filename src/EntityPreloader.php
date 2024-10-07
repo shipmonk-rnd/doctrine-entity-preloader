@@ -44,30 +44,12 @@ class EntityPreloader
         ?int $maxFetchJoinSameFieldCount = null,
     ): array
     {
-        $sourceEntitiesCommonAncestor = null;
-
-        foreach ($sourceEntities as $sourceEntity) {
-            $sourceEntityClassName = $sourceEntity::class;
-
-            if ($sourceEntitiesCommonAncestor === null) {
-                $sourceEntitiesCommonAncestor = $sourceEntityClassName;
-                continue;
-            }
-
-            while (!is_a($sourceEntityClassName, $sourceEntitiesCommonAncestor, true)) {
-                $sourceEntitiesCommonAncestor = get_parent_class($sourceEntitiesCommonAncestor);
-
-                if ($sourceEntitiesCommonAncestor === false) {
-                    throw new LogicException('Source entities must have a common ancestor');
-                }
-            }
-        }
+        $sourceEntitiesCommonAncestor = $this->getCommonAncestor($sourceEntities);
 
         if ($sourceEntitiesCommonAncestor === null) {
             return [];
         }
 
-        /** @var ClassMetadata<E> $sourceClassMetadata */
         $sourceClassMetadata = $this->entityManager->getClassMetadata($sourceEntitiesCommonAncestor);
         $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
         /** @var ClassMetadata<E> $targetClassMetadata */
@@ -87,6 +69,36 @@ class EntityPreloader
             ClassMetadata::MANY_TO_ONE => $this->preloadToOne($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount),
             default => throw new LogicException("Unsupported association mapping type {$associationMapping->type()}"),
         };
+    }
+
+    /**
+     * @param list<S> $entities
+     * @return class-string<S>|null
+     * @template S of E
+     */
+    private function getCommonAncestor(array $entities): ?string
+    {
+        $commonAncestor = null;
+
+        foreach ($entities as $entity) {
+            $entityClassName = $entity::class;
+
+            if ($commonAncestor === null) {
+                $commonAncestor = $entityClassName;
+                continue;
+            }
+
+            while (!is_a($entityClassName, $commonAncestor, true)) {
+                /** @var class-string<S>|false $commonAncestor */
+                $commonAncestor = get_parent_class($commonAncestor);
+
+                if ($commonAncestor === false) {
+                    throw new LogicException('Given entities must have a common ancestor');
+                }
+            }
+        }
+
+        return $commonAncestor;
     }
 
     /**
