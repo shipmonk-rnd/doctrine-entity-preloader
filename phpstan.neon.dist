@@ -25,6 +25,10 @@ parameters:
 
     ignoreErrors:
         -
+            message: '#has an uninitialized property \$id#'
+            identifier: 'property.uninitialized'
+            path: 'tests/Fixtures/Blog'
+        -
             identifier: 'property.onlyWritten'
             path: 'tests/Fixtures/Synthetic'
         -

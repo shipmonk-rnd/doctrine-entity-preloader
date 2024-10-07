@@ -81,6 +81,37 @@ class QueryLogger extends AbstractLogger
         );
     }
 
+    /**
+     * @return list<array{count: int, query: string}>
+     */
+    public function getAggregatedQueries(): array
+    {
+        $queries = $this->getQueries();
+
+        $aggregatedQueries = [];
+
+        foreach ($queries as $query) {
+            $found = false;
+
+            foreach ($aggregatedQueries as &$aggregatedQuery) {
+                if ($aggregatedQuery['query'] === $query) {
+                    $aggregatedQuery['count']++;
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                $aggregatedQueries[] = [
+                    'count' => 1,
+                    'query' => $query,
+                ];
+            }
+        }
+
+        return $aggregatedQueries;
+    }
+
     public function clear(): void
     {
         $this->queries = [];
