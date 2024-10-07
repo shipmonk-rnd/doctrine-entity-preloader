@@ -9,7 +9,6 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\Proxy;
 use LogicException;
 use function array_chunk;
-use function array_keys;
 use function array_values;
 use function count;
 use function get_parent_class;
@@ -169,20 +168,23 @@ class EntityPreloader
     {
         $sourceIdentifierReflection = $sourceClassMetadata->getSingleIdReflectionProperty(); // e.g. Order::$id reflection
         $sourcePropertyReflection = $sourceClassMetadata->getReflectionProperty($sourcePropertyName); // e.g. Order::$items reflection
+
+        $targetIdentifierReflection = $targetClassMetadata->getSingleIdReflectionProperty();
         $targetPropertyName = $sourceClassMetadata->getAssociationMappedByTargetField($sourcePropertyName); // e.g. 'order'
         $targetPropertyReflection = $targetClassMetadata->getReflectionProperty($targetPropertyName); // e.g. Item::$order reflection
 
-        if ($sourceIdentifierReflection === null || $sourcePropertyReflection === null || $targetPropertyReflection === null) {
+        if ($sourceIdentifierReflection === null || $sourcePropertyReflection === null || $targetIdentifierReflection === null || $targetPropertyReflection === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
         $batchSize ??= self::PRELOAD_COLLECTION_DEFAULT_BATCH_SIZE;
-
         $targetEntities = [];
+        $uninitializedSourceEntityIds = [];
         $uninitializedCollections = [];
 
         foreach ($sourceEntities as $sourceEntity) {
-            $sourceEntityId = (string) $sourceIdentifierReflection->getValue($sourceEntity);
+            $sourceEntityId = $sourceIdentifierReflection->getValue($sourceEntity);
+            $sourceEntityKey = (string) $sourceEntityId;
             $sourceEntityCollection = $sourcePropertyReflection->getValue($sourceEntity);
 
             if (
@@ -190,32 +192,37 @@ class EntityPreloader
                 && !$sourceEntityCollection->isInitialized()
                 && !$sourceEntityCollection->isDirty() // preloading dirty collection is too hard to handle
             ) {
-                $uninitializedCollections[$sourceEntityId] = $sourceEntityCollection;
+                $uninitializedSourceEntityIds[$sourceEntityKey] = $sourceEntityId;
+                $uninitializedCollections[$sourceEntityKey] = $sourceEntityCollection;
                 continue;
             }
 
             foreach ($sourceEntityCollection as $targetEntity) {
-                $targetEntities[] = $targetEntity;
+                $targetEntityId = $targetIdentifierReflection->getValue($targetEntity);
+                $targetEntityKey = (string) $targetEntityId;
+                $targetEntities[$targetEntityKey] = $targetEntity;
             }
         }
 
-        foreach (array_chunk($uninitializedCollections, $batchSize, true) as $chunk) {
-            $targetEntitiesChunk = $this->loadEntitiesBy($targetClassMetadata, $targetPropertyName, array_keys($chunk), $maxFetchJoinSameFieldCount);
+        foreach (array_chunk($uninitializedSourceEntityIds, $batchSize, preserve_keys: true) as $uninitializedSourceEntityIdsChunk) {
+            $targetEntitiesChunk = $this->loadEntitiesBy($targetClassMetadata, $targetPropertyName, array_values($uninitializedSourceEntityIdsChunk), $maxFetchJoinSameFieldCount);
 
             foreach ($targetEntitiesChunk as $targetEntity) {
                 $sourceEntity = $targetPropertyReflection->getValue($targetEntity);
-                $sourceEntityId = (string) $sourceIdentifierReflection->getValue($sourceEntity);
-                $uninitializedCollections[$sourceEntityId]->add($targetEntity);
-                $targetEntities[] = $targetEntity;
-            }
+                $sourceEntityKey = (string) $sourceIdentifierReflection->getValue($sourceEntity);
+                $uninitializedCollections[$sourceEntityKey]->add($targetEntity);
 
-            foreach ($chunk as $sourceEntityCollection) {
-                $sourceEntityCollection->setInitialized(true);
-                $sourceEntityCollection->takeSnapshot();
+                $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+                $targetEntities[$targetEntityKey] = $targetEntity;
             }
         }
 
-        return $targetEntities;
+        foreach ($uninitializedCollections as $sourceEntityCollection) {
+            $sourceEntityCollection->setInitialized(true);
+            $sourceEntityCollection->takeSnapshot();
+        }
+
+        return array_values($targetEntities);
     }
 
     /**
