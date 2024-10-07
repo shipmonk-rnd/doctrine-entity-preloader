@@ -52,6 +52,7 @@ class EntityPreloader
 
         $sourceClassMetadata = $this->entityManager->getClassMetadata($sourceEntitiesCommonAncestor);
         $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
+
         /** @var ClassMetadata<E> $targetClassMetadata */
         $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping->targetEntity);
 
@@ -59,6 +60,9 @@ class EntityPreloader
             throw new LogicException('Preloading of indexed associations is not supported');
         }
 
+        if ($associationMapping->isOrdered()) {
+            throw new LogicException('Preloading of ordered associations is not supported');
+        }
 
         $maxFetchJoinSameFieldCount ??= 1;
         $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::BATCH_SIZE, $maxFetchJoinSameFieldCount);
