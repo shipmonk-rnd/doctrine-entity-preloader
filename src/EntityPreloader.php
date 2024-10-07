@@ -59,9 +59,9 @@ class EntityPreloader
             throw new LogicException('Preloading of indexed associations is not supported');
         }
 
-        $maxFetchJoinSameFieldCount ??= 1;
 
-        $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize, $maxFetchJoinSameFieldCount);
+        $maxFetchJoinSameFieldCount ??= 1;
+        $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::BATCH_SIZE, $maxFetchJoinSameFieldCount);
 
         return match ($associationMapping->type()) {
             ClassMetadata::ONE_TO_MANY => $this->preloadOneToMany($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount),
@@ -102,38 +102,45 @@ class EntityPreloader
     }
 
     /**
-     * @param ClassMetadata<T> $sourceClassMetadata
-     * @param list<T> $sourceEntities
-     * @param positive-int|null $batchSize
+     * @param ClassMetadata<T> $classMetadata
+     * @param list<T> $entities
+     * @param positive-int $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
+     * @return list<T>
      * @template T of E
      */
     private function loadProxies(
-        ClassMetadata $sourceClassMetadata,
-        array $sourceEntities,
-        ?int $batchSize,
+        ClassMetadata $classMetadata,
+        array $entities,
+        int $batchSize,
         int $maxFetchJoinSameFieldCount,
-    ): void
+    ): array
     {
-        $sourceIdentifierReflection = $sourceClassMetadata->getSingleIdReflectionProperty();
+        $identifierReflection = $classMetadata->getSingleIdReflectionProperty(); // e.g. Order::$id reflection
+        $identifierName = $classMetadata->getSingleIdentifierFieldName(); // e.g. 'id'
 
-        if ($sourceIdentifierReflection === null) {
+        if ($identifierReflection === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
-        $proxyIds = [];
+        $uniqueEntities = [];
+        $uninitializedIds = [];
 
-        foreach ($sourceEntities as $sourceEntity) {
-            if ($sourceEntity instanceof Proxy && !$sourceEntity->__isInitialized()) {
-                $proxyIds[] = $sourceIdentifierReflection->getValue($sourceEntity);
+        foreach ($entities as $entity) {
+            $entityId = $identifierReflection->getValue($entity);
+            $entityKey = (string) $entityId;
+            $uniqueEntities[$entityKey] = $entity;
+
+            if ($entity instanceof Proxy && !$entity->__isInitialized()) {
+                $uninitializedIds[$entityKey] = $entityId;
             }
         }
 
-        $batchSize ??= self::PRELOAD_COLLECTION_DEFAULT_BATCH_SIZE;
-
-        foreach (array_chunk($proxyIds, $batchSize) as $idsChunk) {
-            $this->loadEntitiesBy($sourceClassMetadata, $sourceIdentifierReflection->getName(), $idsChunk, $maxFetchJoinSameFieldCount);
+        foreach (array_chunk($uninitializedIds, $batchSize) as $idsChunk) {
+            $this->loadEntitiesBy($classMetadata, $identifierName, $idsChunk, $maxFetchJoinSameFieldCount);
         }
+
+        return array_values($uniqueEntities);
     }
 
     /**
@@ -226,18 +233,11 @@ class EntityPreloader
     ): array
     {
         $sourcePropertyReflection = $sourceClassMetadata->getReflectionProperty($sourcePropertyName); // e.g. Item::$order reflection
-        $targetIdentifierReflection = $targetClassMetadata->getSingleIdReflectionProperty(); // e.g. Order::$id reflection
+        $targetEntities = [];
 
-        if ($sourcePropertyReflection === null || $targetIdentifierReflection === null) {
+        if ($sourcePropertyReflection === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
-
-        $targetIdentifierName = $targetClassMetadata->getSingleIdentifierFieldName(); // e.g. 'id'
-
-        $batchSize ??= self::BATCH_SIZE;
-
-        $targetEntities = [];
-        $uninitializedIds = [];
 
         foreach ($sourceEntities as $sourceEntity) {
             $targetEntity = $sourcePropertyReflection->getValue($sourceEntity);
@@ -246,19 +246,10 @@ class EntityPreloader
                 continue;
             }
 
-            $targetEntityId = (string) $targetIdentifierReflection->getValue($targetEntity);
-            $targetEntities[$targetEntityId] = $targetEntity;
-
-            if ($targetEntity instanceof Proxy && !$targetEntity->__isInitialized()) {
-                $uninitializedIds[$targetEntityId] = true;
-            }
+            $targetEntities[] = $targetEntity;
         }
 
-        foreach (array_chunk(array_keys($uninitializedIds), $batchSize) as $idsChunk) {
-            $this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $idsChunk, $maxFetchJoinSameFieldCount);
-        }
-
-        return array_values($targetEntities);
+        return $this->loadProxies($targetClassMetadata, $targetEntities, $batchSize ?? self::BATCH_SIZE, $maxFetchJoinSameFieldCount);
     }
 
     /**
