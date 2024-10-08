@@ -84,29 +84,32 @@ class QueryLogger extends AbstractLogger
     /**
      * @return list<array{count: int, query: string}>
      */
-    public function getAggregatedQueries(): array
+    public function getAggregatedQueries(
+        bool $omitSelectedColumns = true,
+        bool $omitDiscriminatorConditions = true,
+        bool $multiline = false,
+    ): array
     {
-        $queries = $this->getQueries();
+        $queries = $this->getQueries(
+            omitSelectedColumns: $omitSelectedColumns,
+            omitDiscriminatorConditions: $omitDiscriminatorConditions,
+            multiline: $multiline,
+        );
 
         $aggregatedQueries = [];
 
         foreach ($queries as $query) {
-            $found = false;
-
             foreach ($aggregatedQueries as &$aggregatedQuery) {
                 if ($aggregatedQuery['query'] === $query) {
                     $aggregatedQuery['count']++;
-                    $found = true;
-                    break;
+                    continue 2;
                 }
             }
 
-            if (!$found) {
-                $aggregatedQueries[] = [
-                    'count' => 1,
-                    'query' => $query,
-                ];
-            }
+            $aggregatedQueries[] = [
+                'count' => 1,
+                'query' => $query,
+            ];
         }
 
         return $aggregatedQueries;
