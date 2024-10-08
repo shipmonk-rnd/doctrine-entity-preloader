@@ -6,10 +6,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\QueryBuilder;
-use Doctrine\Persistence\Proxy;
 use LogicException;
+use ReflectionProperty;
 use function array_chunk;
-use function array_keys;
 use function array_values;
 use function count;
 use function get_parent_class;
@@ -21,7 +20,7 @@ use function is_a;
 class EntityPreloader
 {
 
-    private const BATCH_SIZE = 1_000;
+    private const PRELOAD_ENTITY_DEFAULT_BATCH_SIZE = 1_000;
     private const PRELOAD_COLLECTION_DEFAULT_BATCH_SIZE = 100;
 
     public function __construct(
@@ -65,14 +64,15 @@ class EntityPreloader
         }
 
         $maxFetchJoinSameFieldCount ??= 1;
-        $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::BATCH_SIZE, $maxFetchJoinSameFieldCount);
+        $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE, $maxFetchJoinSameFieldCount);
 
-        return match ($associationMapping->type()) {
-            ClassMetadata::ONE_TO_MANY => $this->preloadOneToMany($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount),
-            ClassMetadata::ONE_TO_ONE,
-            ClassMetadata::MANY_TO_ONE => $this->preloadToOne($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount),
+        $preloader = match (true) {
+            $associationMapping->isToOne() => $this->preloadToOne(...),
+            $associationMapping->isToMany() => $this->preloadToMany(...),
             default => throw new LogicException("Unsupported association mapping type {$associationMapping->type()}"),
         };
+
+        return $preloader($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount);
     }
 
     /**
@@ -135,7 +135,7 @@ class EntityPreloader
             $entityKey = (string) $entityId;
             $uniqueEntities[$entityKey] = $entity;
 
-            if ($entity instanceof Proxy && !$entity->__isInitialized()) {
+            if ($this->entityManager->isUninitializedObject($entity)) {
                 $uninitializedIds[$entityKey] = $entityId;
             }
         }
@@ -157,7 +157,7 @@ class EntityPreloader
      * @template S of E
      * @template T of E
      */
-    private function preloadOneToMany(
+    private function preloadToMany(
         array $sourceEntities,
         ClassMetadata $sourceClassMetadata,
         string $sourcePropertyName,
@@ -168,20 +168,20 @@ class EntityPreloader
     {
         $sourceIdentifierReflection = $sourceClassMetadata->getSingleIdReflectionProperty(); // e.g. Order::$id reflection
         $sourcePropertyReflection = $sourceClassMetadata->getReflectionProperty($sourcePropertyName); // e.g. Order::$items reflection
-        $targetPropertyName = $sourceClassMetadata->getAssociationMappedByTargetField($sourcePropertyName); // e.g. 'order'
-        $targetPropertyReflection = $targetClassMetadata->getReflectionProperty($targetPropertyName); // e.g. Item::$order reflection
+        $targetIdentifierReflection = $targetClassMetadata->getSingleIdReflectionProperty();
 
-        if ($sourceIdentifierReflection === null || $sourcePropertyReflection === null || $targetPropertyReflection === null) {
+        if ($sourceIdentifierReflection === null || $sourcePropertyReflection === null || $targetIdentifierReflection === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
         $batchSize ??= self::PRELOAD_COLLECTION_DEFAULT_BATCH_SIZE;
-
         $targetEntities = [];
+        $uninitializedSourceEntityIds = [];
         $uninitializedCollections = [];
 
         foreach ($sourceEntities as $sourceEntity) {
-            $sourceEntityId = (string) $sourceIdentifierReflection->getValue($sourceEntity);
+            $sourceEntityId = $sourceIdentifierReflection->getValue($sourceEntity);
+            $sourceEntityKey = (string) $sourceEntityId;
             $sourceEntityCollection = $sourcePropertyReflection->getValue($sourceEntity);
 
             if (
@@ -189,29 +189,149 @@ class EntityPreloader
                 && !$sourceEntityCollection->isInitialized()
                 && !$sourceEntityCollection->isDirty() // preloading dirty collection is too hard to handle
             ) {
-                $uninitializedCollections[$sourceEntityId] = $sourceEntityCollection;
+                $uninitializedSourceEntityIds[$sourceEntityKey] = $sourceEntityId;
+                $uninitializedCollections[$sourceEntityKey] = $sourceEntityCollection;
                 continue;
             }
 
             foreach ($sourceEntityCollection as $targetEntity) {
-                $targetEntities[] = $targetEntity;
+                $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+                $targetEntities[$targetEntityKey] = $targetEntity;
             }
         }
 
-        foreach (array_chunk($uninitializedCollections, $batchSize, true) as $chunk) {
-            $targetEntitiesChunk = $this->loadEntitiesBy($targetClassMetadata, $targetPropertyName, array_keys($chunk), $maxFetchJoinSameFieldCount);
+        $innerLoader = match ($sourceClassMetadata->getAssociationMapping($sourcePropertyName)->type()) {
+            ClassMetadata::ONE_TO_MANY => $this->preloadOneToManyInner(...),
+            ClassMetadata::MANY_TO_MANY => $this->preloadManyToManyInner(...),
+            default => throw new LogicException('Unsupported association mapping type'),
+        };
 
-            foreach ($targetEntitiesChunk as $targetEntity) {
-                $sourceEntity = $targetPropertyReflection->getValue($targetEntity);
-                $sourceEntityId = (string) $sourceIdentifierReflection->getValue($sourceEntity);
-                $uninitializedCollections[$sourceEntityId]->add($targetEntity);
-                $targetEntities[] = $targetEntity;
+        foreach (array_chunk($uninitializedSourceEntityIds, $batchSize, preserve_keys: true) as $uninitializedSourceEntityIdsChunk) {
+            $targetEntitiesChunk = $innerLoader(
+                sourceClassMetadata: $sourceClassMetadata,
+                sourceIdentifierReflection: $sourceIdentifierReflection,
+                sourcePropertyName: $sourcePropertyName,
+                targetClassMetadata: $targetClassMetadata,
+                targetIdentifierReflection: $targetIdentifierReflection,
+                uninitializedSourceEntityIdsChunk: array_values($uninitializedSourceEntityIdsChunk),
+                uninitializedCollections: $uninitializedCollections,
+                maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount,
+            );
+
+            foreach ($targetEntitiesChunk as $targetEntityKey => $targetEntity) {
+                $targetEntities[$targetEntityKey] = $targetEntity;
+            }
+        }
+
+        foreach ($uninitializedCollections as $sourceEntityCollection) {
+            $sourceEntityCollection->setInitialized(true);
+            $sourceEntityCollection->takeSnapshot();
+        }
+
+        return array_values($targetEntities);
+    }
+
+    /**
+     * @param ClassMetadata<S> $sourceClassMetadata
+     * @param ClassMetadata<T> $targetClassMetadata
+     * @param list<mixed> $uninitializedSourceEntityIdsChunk
+     * @param array<string, PersistentCollection<int, T>> $uninitializedCollections
+     * @param non-negative-int $maxFetchJoinSameFieldCount
+     * @return array<string, T>
+     * @template S of E
+     * @template T of E
+     */
+    private function preloadOneToManyInner(
+        ClassMetadata $sourceClassMetadata,
+        ReflectionProperty $sourceIdentifierReflection,
+        string $sourcePropertyName,
+        ClassMetadata $targetClassMetadata,
+        ReflectionProperty $targetIdentifierReflection,
+        array $uninitializedSourceEntityIdsChunk,
+        array $uninitializedCollections,
+        int $maxFetchJoinSameFieldCount,
+    ): array
+    {
+        $targetPropertyName = $sourceClassMetadata->getAssociationMappedByTargetField($sourcePropertyName); // e.g. 'order'
+        $targetPropertyReflection = $targetClassMetadata->getReflectionProperty($targetPropertyName); // e.g. Item::$order reflection
+        $targetEntities = [];
+
+        if ($targetPropertyReflection === null) {
+            throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
+        }
+
+        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetPropertyName, $uninitializedSourceEntityIdsChunk, $maxFetchJoinSameFieldCount) as $targetEntity) {
+            $sourceEntity = $targetPropertyReflection->getValue($targetEntity);
+            $sourceEntityKey = (string) $sourceIdentifierReflection->getValue($sourceEntity);
+            $uninitializedCollections[$sourceEntityKey]->add($targetEntity);
+
+            $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+            $targetEntities[$targetEntityKey] = $targetEntity;
+        }
+
+        return $targetEntities;
+    }
+
+    /**
+     * @param ClassMetadata<S> $sourceClassMetadata
+     * @param ClassMetadata<T> $targetClassMetadata
+     * @param list<mixed> $uninitializedSourceEntityIdsChunk
+     * @param array<string, PersistentCollection<int, T>> $uninitializedCollections
+     * @param non-negative-int $maxFetchJoinSameFieldCount
+     * @return array<string, T>
+     * @template S of E
+     * @template T of E
+     */
+    private function preloadManyToManyInner(
+        ClassMetadata $sourceClassMetadata,
+        ReflectionProperty $sourceIdentifierReflection,
+        string $sourcePropertyName,
+        ClassMetadata $targetClassMetadata,
+        ReflectionProperty $targetIdentifierReflection,
+        array $uninitializedSourceEntityIdsChunk,
+        array $uninitializedCollections,
+        int $maxFetchJoinSameFieldCount,
+    ): array
+    {
+        $sourceIdentifierName = $sourceClassMetadata->getSingleIdentifierFieldName();
+        $targetIdentifierName = $targetClassMetadata->getSingleIdentifierFieldName();
+
+        $manyToManyRows = $this->entityManager->createQueryBuilder()
+            ->select("source.{$sourceIdentifierName} AS sourceId", "target.{$targetIdentifierName} AS targetId")
+            ->from($sourceClassMetadata->getName(), 'source')
+            ->join("source.{$sourcePropertyName}", 'target')
+            ->andWhere('source IN (:sourceEntityIds)')
+            ->setParameter('sourceEntityIds', $uninitializedSourceEntityIdsChunk)
+            ->getQuery()
+            ->getResult();
+
+        $targetEntities = [];
+        $uninitializedTargetEntityIds = [];
+
+        foreach ($manyToManyRows as $manyToManyRow) {
+            $targetEntityId = $manyToManyRow['targetId'];
+            $targetEntityKey = (string) $targetEntityId;
+
+            /** @var T|false $targetEntity */
+            $targetEntity = $this->entityManager->getUnitOfWork()->tryGetById($targetEntityId, $targetClassMetadata->getName());
+
+            if ($targetEntity !== false && !$this->entityManager->isUninitializedObject($targetEntity)) {
+                $targetEntities[$targetEntityKey] = $targetEntity;
+                continue;
             }
 
-            foreach ($chunk as $sourceEntityCollection) {
-                $sourceEntityCollection->setInitialized(true);
-                $sourceEntityCollection->takeSnapshot();
-            }
+            $uninitializedTargetEntityIds[$targetEntityKey] = $targetEntityId;
+        }
+
+        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
+            $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+            $targetEntities[$targetEntityKey] = $targetEntity;
+        }
+
+        foreach ($manyToManyRows as $manyToManyRow) {
+            $sourceEntityKey = (string) $manyToManyRow['sourceId'];
+            $targetEntityKey = (string) $manyToManyRow['targetId'];
+            $uninitializedCollections[$sourceEntityKey]->add($targetEntities[$targetEntityKey]);
         }
 
         return $targetEntities;
@@ -237,11 +357,13 @@ class EntityPreloader
     ): array
     {
         $sourcePropertyReflection = $sourceClassMetadata->getReflectionProperty($sourcePropertyName); // e.g. Item::$order reflection
-        $targetEntities = [];
 
         if ($sourcePropertyReflection === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
+
+        $batchSize ??= self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE;
+        $targetEntities = [];
 
         foreach ($sourceEntities as $sourceEntity) {
             $targetEntity = $sourcePropertyReflection->getValue($sourceEntity);
@@ -253,7 +375,7 @@ class EntityPreloader
             $targetEntities[] = $targetEntity;
         }
 
-        return $this->loadProxies($targetClassMetadata, $targetEntities, $batchSize ?? self::BATCH_SIZE, $maxFetchJoinSameFieldCount);
+        return $this->loadProxies($targetClassMetadata, $targetEntities, $batchSize, $maxFetchJoinSameFieldCount);
     }
 
     /**
@@ -270,6 +392,10 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
+        if (count($fieldValues) === 0) {
+            return [];
+        }
+
         $rootLevelAlias = 'e';
 
         $queryBuilder = $this->entityManager->createQueryBuilder()

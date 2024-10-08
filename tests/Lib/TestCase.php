@@ -68,10 +68,18 @@ abstract class TestCase extends PhpUnitTestCase
     /**
      * @param list<array{count: int, query: string}> $expectedQueries
      */
-    protected function assertAggregatedQueries(array $expectedQueries): void
+    protected function assertAggregatedQueries(
+        array $expectedQueries,
+        bool $omitSelectedColumns = true,
+        bool $omitDiscriminatorConditions = true,
+        bool $multiline = false,
+    ): void
     {
-        $actualQueries = $this->getQueryLogger()->getAggregatedQueries();
-        self::assertSame($expectedQueries, $actualQueries);
+        self::assertSame($expectedQueries, $this->getQueryLogger()->getAggregatedQueries(
+            omitSelectedColumns: $omitSelectedColumns,
+            omitDiscriminatorConditions: $omitDiscriminatorConditions,
+            multiline: $multiline,
+        ));
     }
 
     protected function createDummyBlogData(
@@ -192,14 +200,19 @@ abstract class TestCase extends PhpUnitTestCase
 
     private function createEntityManager(LoggerInterface $logger, bool $inMemory = true): EntityManagerInterface
     {
-        $path = __DIR__ . '/../../cache/db.sqlite';
-        @unlink($path);
-
         $config = ORMSetup::createAttributeMetadataConfiguration([__DIR__ . '/../Fixtures'], isDevMode: true, proxyDir: __DIR__ . '/../../cache/proxies');
         $config->setNamingStrategy(new UnderscoreNamingStrategy());
         $config->setMiddlewares([new Middleware($logger)]);
 
-        $driverOptions = $inMemory ? ['memory' => true] : ['path' => $path];
+        if ($inMemory) {
+            $driverOptions = ['memory' => true];
+
+        } else {
+            $path = __DIR__ . '/../../cache/db.sqlite';
+            $driverOptions = ['path' => $path];
+            @unlink($path);
+        }
+
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite'] + $driverOptions, $config);
         $entityManager = new EntityManager($connection, $config);
 
