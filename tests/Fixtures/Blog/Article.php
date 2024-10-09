@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToMany;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
+use Doctrine\ORM\Mapping\OrderBy;
 
 #[Entity]
 class Article
@@ -41,6 +42,7 @@ class Article
      * @var Collection<int, Comment>
      */
     #[OneToMany(targetEntity: Comment::class, mappedBy: 'article')]
+    #[OrderBy(['id' => 'DESC'])]
     private Collection $comments;
 
     public function __construct(string $title, string $content, ?Category $category = null)
