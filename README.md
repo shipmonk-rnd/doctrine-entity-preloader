@@ -2,21 +2,10 @@
 
 `shipmonk/doctrine-entity-preloader` is a PHP library designed to tackle the n+1 query problem in Doctrine ORM by efficiently preloading related entities. This library offers a flexible and powerful way to optimize database access patterns, especially in cases with complex entity relationships.
 
-- 🚀 **Performance Boost:** Minimizes n+1 issues by preloading related entities in batches.
+- 🚀 **Performance Boost:** Minimizes n+1 issues by preloading related entities with **constant number of queries**.
 - 🔄 **Flexible:** Supports `OneToOne`, `OneToMany`, `ManyToOne`, and `ManyToMany` associations.
-- 🛠️ **Configurable:** Customizable batch sizes and fetch join limits.
 - 💡 **Easy Integration:** Simple to integrate with your existing Doctrine setup.
-
-## Comparison
-
-Below is an example showcasing different ways of handling the n+1 query issue and how `EntityPreloader` stacks up:
-
-| Approach               | Query Count                          | Explanation                                                                 |
-|------------------------|--------------------------------------|-----------------------------------------------------------------------------|
-| Unoptimized            | 1 + n                                | One query to fetch articles, plus one for each category.                    |
-| With Fetch Join        | 1                                    | Fetches articles and categories in a single join.                           |
-| Eager Fetch Mode       | 1 + 1                                | Fetches articles, then fetches all categories with an `IN` clause.          |
-| Using EntityPreloader  | 1 + 1                                | Fetches articles, then loads categories in a single query with `IN` clause. |
+- 🛠️ **Configurable:** Customizable batch sizes and fetch join limits.
 
 ## Installation
 
@@ -32,19 +21,41 @@ Below is a basic example demonstrating how to use `EntityPreloader` to preload r
 
 ```php
 use ShipMonk\DoctrineEntityPreloader\EntityPreloader;
-use Doctrine\ORM\EntityManagerInterface;
 
-$entityManager = // Get your EntityManager instance
-
-$articles = $entityManager->getRepository(Article::class)->findAll();
+$categories = $entityManager->getRepository(Category::class)->findAll();
 
 $preloader = new EntityPreloader($entityManager);
-$preloader->preload($articles, 'category'); // Preload categories for all articles
+$articles = $preloader->preload($categories, 'articles'); // 1 query to preload articles
+$preloader->preload($articles, 'tags'); // 1 query to preload tags
+$preloader->preload($articles, 'comments'); // 1 query to preload comments
 
-foreach ($articles as $article) {
-    echo $article->getCategory()->getName();
+// no more queries are needed now
+foreach ($categories as $category) {
+    foreach ($category->getArticles() as $article) {
+        echo $article->getTitle(), "\n";
+
+        foreach ($articles->getTags() as $tag) {
+            echo $tag->getLabel(), "\n";
+        }
+
+        foreach ($articles->getComments() as $comment) {
+            echo $comment->getText(), "\n";
+        }
+    }
 }
 ```
+
+## Comparison vs. Fetch Joins
+
+Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
+
+## Comparison vs. `Doctrine\ORM\AbstractQuery::setFetchMode`
+
+Unlike `setFetchMode` it can
+
+* preload nested associations
+* preload many has many association
+* avoid additional queries fired by Doctrine during hydration process
 
 ## Configuration
 
@@ -62,27 +73,6 @@ $preloader->preload(
 );
 ```
 
-## Example Tests
-
-The following test cases illustrate various approaches and how `EntityPreloader` performs compared to other common solutions:
-
-```php
-public function testManyHasOneWithPreload(): void
-{
-    $this->createDummyBlogData(categoryCount: 5, articleInEachCategoryCount: 5);
-
-    $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
-    $this->getEntityPreloader()->preload($articles, 'category');
-
-    // Category names are accessed without triggering additional queries
-    $this->readArticleCategoryNames($articles);
-
-    self::assertAggregatedQueries([
-        ['count' => 1, 'query' => 'SELECT * FROM article t0'],
-        ['count' => 1, 'query' => 'SELECT * FROM category c0_ WHERE c0_.id IN (?, ?, ?, ?, ?)'],
-    ]);
-}
-```
 
 ## Supported Association Types
 
@@ -91,15 +81,14 @@ public function testManyHasOneWithPreload(): void
 - `ManyToOne`
 - `ManyToMany`
 
-## Contributing
 
-Contributions are welcome! To contribute:
+## Limitations
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/my-new-feature`).
-3. Commit your changes (`git commit -am 'Add new feature'`).
-4. Push to the branch (`git push origin feature/my-new-feature`).
-5. Open a pull request.
+- no support for ordered collections
+- no support for indexed collections
+- no support for dirty collections
+- no support for composite primary keys
+
 
 ## License
 
