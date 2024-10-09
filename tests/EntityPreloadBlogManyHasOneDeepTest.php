@@ -6,6 +6,11 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
+use function array_filter;
+use function array_map;
+use function array_unique;
+use function array_values;
+use function count;
 
 class EntityPreloadBlogManyHasOneDeepTest extends TestCase
 {
@@ -20,7 +25,47 @@ class EntityPreloadBlogManyHasOneDeepTest extends TestCase
 
         self::assertAggregatedQueries([
             ['count' => 1, 'query' => 'SELECT * FROM article t0'],
-            ['count' => 10, 'query' => 'SELECT * FROM category t0 WHERE t0.id = ?'],
+            ['count' => 5 + 5, 'query' => 'SELECT * FROM category t0 WHERE t0.id = ?'],
+        ]);
+    }
+
+    public function testManyHasOneDeepWithManualPreload(): void
+    {
+        $this->createDummyBlogData(categoryCount: 5, categoryParentsCount: 5, articleInEachCategoryCount: 5);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+
+        $categoryIds = array_map(static fn (Article $article) => $article->getCategory()?->getId(), $articles);
+        $categoryIds = array_filter($categoryIds, static fn (?int $id) => $id !== null);
+
+        if (count($categoryIds) > 0) {
+            $categories = $this->getEntityManager()->createQueryBuilder()
+                ->select('category')
+                ->from(Category::class, 'category')
+                ->where('category.id IN (:ids)')
+                ->setParameter('ids', array_values(array_unique($categoryIds)))
+                ->getQuery()
+                ->getResult();
+
+            $parentCategoryIds = array_map(static fn (Category $category) => $category->getParent()?->getId(), $categories);
+            $parentCategoryIds = array_filter($parentCategoryIds, static fn (?int $id) => $id !== null);
+
+            if (count($parentCategoryIds) > 0) {
+                $this->getEntityManager()->createQueryBuilder()
+                    ->select('category')
+                    ->from(Category::class, 'category')
+                    ->where('category.id IN (:ids)')
+                    ->setParameter('ids', array_values(array_unique($parentCategoryIds)))
+                    ->getQuery()
+                    ->getResult();
+            }
+        }
+
+        $this->readArticleCategoryParentNames($articles);
+
+        self::assertAggregatedQueries([
+            ['count' => 1, 'query' => 'SELECT * FROM article t0'],
+            ['count' => 2, 'query' => 'SELECT * FROM category c0_ WHERE c0_.id IN (?, ?, ?, ?, ?)'],
         ]);
     }
 
