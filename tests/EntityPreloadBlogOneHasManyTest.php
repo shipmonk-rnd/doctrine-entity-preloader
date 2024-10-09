@@ -3,6 +3,8 @@
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Query\QueryException;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
 
@@ -21,6 +23,52 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
             ['count' => 1, 'query' => 'SELECT * FROM category t0'],
             ['count' => 5, 'query' => 'SELECT * FROM article t0 WHERE t0.category_id = ?'],
         ]);
+    }
+
+    public function testOneHasManyWithWithManualPreload(): void
+    {
+        $this->createDummyBlogData(categoryCount: 5, articleInEachCategoryCount: 5);
+
+        $categories = $this->getEntityManager()->getRepository(Category::class)->findAll();
+
+        $this->getEntityManager()->createQueryBuilder()
+            ->select('article')
+            ->from(Article::class, 'article')
+            ->where('article.category IN (:categories)')
+            ->setParameter('categories', $categories)
+            ->getQuery()
+            ->getResult();
+
+        $this->readArticleTitles($categories);
+
+        self::assertAggregatedQueries([
+            ['count' => 1, 'query' => 'SELECT * FROM category t0'],
+            ['count' => 1, 'query' => 'SELECT * FROM article a0_ WHERE a0_.category_id IN (?, ?, ?, ?, ?)'],
+            ['count' => 5, 'query' => 'SELECT * FROM article t0 WHERE t0.category_id = ?'],
+        ]);
+    }
+
+    public function testOneHasManyWithWithManualPreloadUsingPartial(): void
+    {
+        $this->createDummyBlogData(categoryCount: 5, articleInEachCategoryCount: 5);
+
+        $categories = $this->getEntityManager()->getRepository(Category::class)->findAll();
+
+        // partial no longer works in doctrine 3.0
+        self::assertException(
+            QueryException::class,
+            null,
+            function () use ($categories): void {
+                $this->getEntityManager()->createQueryBuilder()
+                    ->select('PARTIAL category.{id}', 'article')
+                    ->from(Category::class, 'category')
+                    ->leftJoin('category.articles', 'article')
+                    ->where('category IN (:categories)')
+                    ->setParameter('categories', $categories)
+                    ->getQuery()
+                    ->getResult();
+            },
+        );
     }
 
     public function testOneHasManyWithFetchJoin(): void
