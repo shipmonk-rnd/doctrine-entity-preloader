@@ -4,6 +4,9 @@ namespace ShipMonk\DoctrineEntityPreloader;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\ManyToManyAssociationMapping;
+use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
+use Doctrine\ORM\Mapping\ToManyAssociationMapping;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\QueryBuilder;
 use LogicException;
@@ -57,10 +60,6 @@ class EntityPreloader
 
         if ($associationMapping->isIndexed()) {
             throw new LogicException('Preloading of indexed associations is not supported');
-        }
-
-        if ($associationMapping->isOrdered()) {
-            throw new LogicException('Preloading of ordered associations is not supported');
         }
 
         $maxFetchJoinSameFieldCount ??= 1;
@@ -200,14 +199,21 @@ class EntityPreloader
             }
         }
 
-        $innerLoader = match ($sourceClassMetadata->getAssociationMapping($sourcePropertyName)->type()) {
-            ClassMetadata::ONE_TO_MANY => $this->preloadOneToManyInner(...),
-            ClassMetadata::MANY_TO_MANY => $this->preloadManyToManyInner(...),
+        $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
+
+        if (!$associationMapping instanceof ToManyAssociationMapping) {
+            throw new LogicException('Unsupported association mapping type');
+        }
+
+        $innerLoader = match (true) {
+            $associationMapping instanceof OneToManyAssociationMapping => $this->preloadOneToManyInner(...),
+            $associationMapping instanceof ManyToManyAssociationMapping => $this->preloadManyToManyInner(...),
             default => throw new LogicException('Unsupported association mapping type'),
         };
 
         foreach (array_chunk($uninitializedSourceEntityIds, $batchSize, preserve_keys: true) as $uninitializedSourceEntityIdsChunk) {
             $targetEntitiesChunk = $innerLoader(
+                associationMapping: $associationMapping,
                 sourceClassMetadata: $sourceClassMetadata,
                 sourceIdentifierReflection: $sourceIdentifierReflection,
                 sourcePropertyName: $sourcePropertyName,
@@ -242,6 +248,7 @@ class EntityPreloader
      * @template T of E
      */
     private function preloadOneToManyInner(
+        ToManyAssociationMapping $associationMapping,
         ClassMetadata $sourceClassMetadata,
         ReflectionProperty $sourceIdentifierReflection,
         string $sourcePropertyName,
@@ -260,7 +267,15 @@ class EntityPreloader
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
-        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetPropertyName, $uninitializedSourceEntityIdsChunk, $maxFetchJoinSameFieldCount) as $targetEntity) {
+        $targetEntitiesList = $this->loadEntitiesBy(
+            $targetClassMetadata,
+            $targetPropertyName,
+            $uninitializedSourceEntityIdsChunk,
+            $maxFetchJoinSameFieldCount,
+            $associationMapping->orderBy(),
+        );
+
+        foreach ($targetEntitiesList as $targetEntity) {
             $sourceEntity = $targetPropertyReflection->getValue($targetEntity);
             $sourceEntityKey = (string) $sourceIdentifierReflection->getValue($sourceEntity);
             $uninitializedCollections[$sourceEntityKey]->add($targetEntity);
@@ -283,6 +298,7 @@ class EntityPreloader
      * @template T of E
      */
     private function preloadManyToManyInner(
+        ToManyAssociationMapping $associationMapping,
         ClassMetadata $sourceClassMetadata,
         ReflectionProperty $sourceIdentifierReflection,
         string $sourcePropertyName,
@@ -293,6 +309,10 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
+        if (count($associationMapping->orderBy()) > 0) {
+            throw new LogicException('Many-to-many associations with order by are not supported');
+        }
+
         $sourceIdentifierName = $sourceClassMetadata->getSingleIdentifierFieldName();
         $targetIdentifierName = $targetClassMetadata->getSingleIdentifierFieldName();
 
@@ -382,6 +402,7 @@ class EntityPreloader
      * @param ClassMetadata<T> $targetClassMetadata
      * @param list<mixed> $fieldValues
      * @param non-negative-int $maxFetchJoinSameFieldCount
+     * @param array<string, 'asc'|'desc'> $orderBy
      * @return list<T>
      * @template T of E
      */
@@ -390,6 +411,7 @@ class EntityPreloader
         string $fieldName,
         array $fieldValues,
         int $maxFetchJoinSameFieldCount,
+        array $orderBy = [],
     ): array
     {
         if (count($fieldValues) === 0) {
@@ -405,6 +427,10 @@ class EntityPreloader
             ->setParameter('fieldValues', $fieldValues);
 
         $this->addFetchJoinsToPreventFetchDuringHydration($rootLevelAlias, $queryBuilder, $targetClassMetadata, $maxFetchJoinSameFieldCount);
+
+        foreach ($orderBy as $field => $direction) {
+            $queryBuilder->addOrderBy("{$rootLevelAlias}.{$field}", $direction);
+        }
 
         return $queryBuilder->getQuery()->getResult();
     }
