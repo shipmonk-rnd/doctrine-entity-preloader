@@ -75,7 +75,6 @@ $preloader->preload(
 
 ## Limitations
 
-- no support for ordered collections
 - no support for indexed collections
 - no support for dirty collections
 - no support for composite primary keys
