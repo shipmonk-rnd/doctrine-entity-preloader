@@ -33,6 +33,7 @@ jobs:
             fail-fast: false
             matrix:
                 php-version: [ '8.1', '8.2', '8.3' ]
+                doctrine-version: [ '^2.19', '^3.2' ]
                 dependency-version: [ prefer-lowest, prefer-stable ]
         steps:
             -
@@ -44,8 +45,11 @@ jobs:
                 with:
                     php-version: ${{ matrix.php-version }}
             -
-                name: Update dependencies
+                name: Install dependencies
                 run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction
+            -
+                name: Install correct version of Doctrine
+                run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction --with-all-dependencies doctrine/orm:${{ matrix.doctrine-version }}
             -
                 name: Run tests
                 run: composer check:tests
