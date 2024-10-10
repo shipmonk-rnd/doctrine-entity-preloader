@@ -18,6 +18,14 @@
 | [ManyToOneDeep](tests/EntityPreloadBlogManyHasOneDeepTest.php)         | 1 + n + n   | 1 + 1 + 1                | 1, but duplicates rows | 1 + 1 + n    | 1 + 1 + 1                      |
 | [ManyToMany](tests/EntityPreloadBlogManyHasManyTest.php)               | 1 + n       | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1        | 1 + 1                          |
 
+Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
+
+Unlike `Doctrine\ORM\AbstractQuery::setFetchMode` it can
+
+* preload nested associations
+* preload `#[ManyToMany]` association
+* avoid additional queries fired by Doctrine during hydration process
+
 
 ## Installation
 
@@ -56,18 +64,6 @@ foreach ($categories as $category) {
     }
 }
 ```
-
-## Comparison vs. Fetch Joins
-
-Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
-
-## Comparison vs. `Doctrine\ORM\AbstractQuery::setFetchMode`
-
-Unlike `setFetchMode` it can
-
-* preload nested associations
-* preload `#[ManyToMany]` association
-* avoid additional queries fired by Doctrine during hydration process
 
 ## Configuration
 
