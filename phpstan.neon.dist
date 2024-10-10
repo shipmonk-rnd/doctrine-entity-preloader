@@ -25,6 +25,16 @@ parameters:
 
     ignoreErrors:
         -
+            message: '#Strict comparison using === between ReflectionProperty and null will always evaluate to false#'
+            identifier: 'identical.alwaysFalse'
+            reportUnmatched: false
+            path: 'src/EntityPreloader.php'
+        -
+            message: '#Result of \|\| is always false#'
+            identifier: 'booleanOr.alwaysFalse'
+            reportUnmatched: false
+            path: 'src/EntityPreloader.php'
+        -
             message: '#has an uninitialized property \$id#'
             identifier: 'property.uninitialized'
             path: 'tests/Fixtures/Blog'
@@ -39,4 +49,5 @@ parameters:
             path: 'tests/Fixtures/Synthetic'
         -
             identifier: 'property.unusedType'
+            reportUnmatched: false
             path: 'tests/Fixtures/Synthetic'

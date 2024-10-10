@@ -2,11 +2,9 @@
 
 namespace ShipMonk\DoctrineEntityPreloader;
 
+use ArrayAccess;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\Mapping\ManyToManyAssociationMapping;
-use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
-use Doctrine\ORM\Mapping\ToManyAssociationMapping;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\QueryBuilder;
 use LogicException;
@@ -56,19 +54,19 @@ class EntityPreloader
         $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
 
         /** @var ClassMetadata<E> $targetClassMetadata */
-        $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping->targetEntity);
+        $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping['targetEntity']);
 
-        if ($associationMapping->isIndexed()) {
+        if (isset($associationMapping['indexBy'])) {
             throw new LogicException('Preloading of indexed associations is not supported');
         }
 
         $maxFetchJoinSameFieldCount ??= 1;
         $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE, $maxFetchJoinSameFieldCount);
 
-        $preloader = match (true) {
-            $associationMapping->isToOne() => $this->preloadToOne(...),
-            $associationMapping->isToMany() => $this->preloadToMany(...),
-            default => throw new LogicException("Unsupported association mapping type {$associationMapping->type()}"),
+        $preloader = match ($associationMapping['type']) {
+            ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE => $this->preloadToOne(...),
+            ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY => $this->preloadToMany(...),
+            default => throw new LogicException("Unsupported association mapping type {$associationMapping['type']}"),
         };
 
         return $preloader($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount);
@@ -201,13 +199,9 @@ class EntityPreloader
 
         $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
 
-        if (!$associationMapping instanceof ToManyAssociationMapping) {
-            throw new LogicException('Unsupported association mapping type');
-        }
-
-        $innerLoader = match (true) {
-            $associationMapping instanceof OneToManyAssociationMapping => $this->preloadOneToManyInner(...),
-            $associationMapping instanceof ManyToManyAssociationMapping => $this->preloadManyToManyInner(...),
+        $innerLoader = match ($associationMapping['type']) {
+            ClassMetadata::ONE_TO_MANY => $this->preloadOneToManyInner(...),
+            ClassMetadata::MANY_TO_MANY => $this->preloadManyToManyInner(...),
             default => throw new LogicException('Unsupported association mapping type'),
         };
 
@@ -238,6 +232,7 @@ class EntityPreloader
     }
 
     /**
+     * @param array<string, mixed>|ArrayAccess<string, mixed> $associationMapping
      * @param ClassMetadata<S> $sourceClassMetadata
      * @param ClassMetadata<T> $targetClassMetadata
      * @param list<mixed> $uninitializedSourceEntityIdsChunk
@@ -248,7 +243,7 @@ class EntityPreloader
      * @template T of E
      */
     private function preloadOneToManyInner(
-        ToManyAssociationMapping $associationMapping,
+        array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
         ReflectionProperty $sourceIdentifierReflection,
         string $sourcePropertyName,
@@ -272,7 +267,7 @@ class EntityPreloader
             $targetPropertyName,
             $uninitializedSourceEntityIdsChunk,
             $maxFetchJoinSameFieldCount,
-            $associationMapping->orderBy(),
+            $associationMapping['orderBy'] ?? [],
         );
 
         foreach ($targetEntitiesList as $targetEntity) {
@@ -288,6 +283,7 @@ class EntityPreloader
     }
 
     /**
+     * @param array<string, mixed>|ArrayAccess<string, mixed> $associationMapping
      * @param ClassMetadata<S> $sourceClassMetadata
      * @param ClassMetadata<T> $targetClassMetadata
      * @param list<mixed> $uninitializedSourceEntityIdsChunk
@@ -298,7 +294,7 @@ class EntityPreloader
      * @template T of E
      */
     private function preloadManyToManyInner(
-        ToManyAssociationMapping $associationMapping,
+        array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
         ReflectionProperty $sourceIdentifierReflection,
         string $sourcePropertyName,
@@ -309,7 +305,7 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        if (count($associationMapping->orderBy()) > 0) {
+        if (count($associationMapping['orderBy'] ?? []) > 0) {
             throw new LogicException('Many-to-many associations with order by are not supported');
         }
 
@@ -458,11 +454,11 @@ class EntityPreloader
             }
 
             /** @var ClassMetadata<E> $targetClassMetadata */
-            $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping->targetEntity);
+            $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping['targetEntity']);
 
-            $isToOne = ($associationMapping->type() & ClassMetadata::TO_ONE) !== 0;
-            $isToOneInversed = $isToOne && !$associationMapping->isOwningSide();
-            $isToOneAbstract = $isToOne && $associationMapping->isOwningSide() && count($targetClassMetadata->subClasses) > 0;
+            $isToOne = ($associationMapping['type'] & ClassMetadata::TO_ONE) !== 0;
+            $isToOneInversed = $isToOne && $associationMapping['isOwningSide'] === false;
+            $isToOneAbstract = $isToOne && $associationMapping['isOwningSide'] === true && count($targetClassMetadata->subClasses) > 0;
 
             if (!$isToOneInversed && !$isToOneAbstract) {
                 continue;

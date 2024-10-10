@@ -2,11 +2,13 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Composer\InstalledVersions;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query\QueryException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
+use function str_starts_with;
 
 class EntityPreloadBlogOneHasManyTest extends TestCase
 {
@@ -54,21 +56,27 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
 
         $categories = $this->getEntityManager()->getRepository(Category::class)->findAll();
 
-        // partial no longer works in doctrine 3.0
-        self::assertException(
-            QueryException::class,
-            null,
-            function () use ($categories): void {
-                $this->getEntityManager()->createQueryBuilder()
-                    ->select('PARTIAL category.{id}', 'article')
-                    ->from(Category::class, 'category')
-                    ->leftJoin('category.articles', 'article')
-                    ->where('category IN (:categories)')
-                    ->setParameter('categories', $categories)
-                    ->getQuery()
-                    ->getResult();
-            },
-        );
+        $query = $this->getEntityManager()->createQueryBuilder()
+            ->select('PARTIAL category.{id}', 'article')
+            ->from(Category::class, 'category')
+            ->leftJoin('category.articles', 'article')
+            ->where('category IN (:categories)')
+            ->setParameter('categories', $categories)
+            ->getQuery();
+
+        if (str_starts_with(InstalledVersions::getVersion('doctrine/orm') ?? 'unknown', '3.')) {
+            self::assertException(QueryException::class, null, static fn() => $query->getResult());
+
+        } else {
+            $query->getResult();
+
+            $this->readArticleTitles($categories);
+
+            self::assertAggregatedQueries([
+                ['count' => 1, 'query' => 'SELECT * FROM category t0'],
+                ['count' => 1, 'query' => 'SELECT * FROM category c0_ LEFT JOIN article a1_ ON c0_.id = a1_.category_id WHERE c0_.id IN (?, ?, ?, ?, ?)'],
+            ]);
+        }
     }
 
     public function testOneHasManyWithFetchJoin(): void
