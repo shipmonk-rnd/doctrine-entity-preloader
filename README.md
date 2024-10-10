@@ -6,6 +6,19 @@
 - 🔄 **Flexible:** Supports all associations: `#[OneToOne]`, `#[OneToMany]`, `#[ManyToOne]`, and `#[ManyToMany]`.
 - 💡 **Easy Integration:** Simple to integrate with your existing Doctrine setup.
 
+
+## Comparison
+
+|                                                                        | Unoptimized | Manual Preload           | Fetch Join             | setFetchMode | EntityPreloader                |
+|------------------------------------------------------------------------|-------------|--------------------------|------------------------|--------------|--------------------------------|
+| [OneToMany](tests/EntityPreloadBlogOneHasManyTest.php)                 | 1 + n       | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1        | 1 + 1                          |
+| [OneToManyDeep](tests/EntityPreloadBlogOneHasManyDeepTest.php)         | 1 + n + n²  | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1 + n²   | 1 + 1 + 1                      |
+| [OneToManyAbstract](tests/EntityPreloadBlogOneHasManyAbstractTest.php) | 1 + n + n²  | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1 + n²   | 1 + 1 + 1, but duplicates rows |
+| [ManyToOne](tests/EntityPreloadBlogManyHasOneTest.php)                 | 1 + n       | 1 + 1                    | 1, but duplicates rows | 1 + 1        | 1 + 1                          |
+| [ManyToOneDeep](tests/EntityPreloadBlogManyHasOneDeepTest.php)         | 1 + n + n   | 1 + 1 + 1                | 1, but duplicates rows | 1 + 1 + n    | 1 + 1 + 1                      |
+| [ManyToMany](tests/EntityPreloadBlogManyHasManyTest.php)               | 1 + n       | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1        | 1 + 1                          |
+
+
 ## Installation
 
 To install the library, use Composer:
