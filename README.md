@@ -9,14 +9,14 @@
 
 ## Comparison
 
-|                                                                        | Default    | Manual Preload           | Fetch Join             | setFetchMode | **EntityPreloader**            |
-|------------------------------------------------------------------------|------------|--------------------------|------------------------|--------------|--------------------------------|
-| [OneToMany](tests/EntityPreloadBlogOneHasManyTest.php)                 | 1 + n      | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1        | 1 + 1                          |
-| [OneToManyDeep](tests/EntityPreloadBlogOneHasManyDeepTest.php)         | 1 + n + n² | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1 + n²   | 1 + 1 + 1                      |
-| [OneToManyAbstract](tests/EntityPreloadBlogOneHasManyAbstractTest.php) | 1 + n + n² | impossible in Doctrine 3 | 1, but duplicates rows | 1 + 1 + n²   | 1 + 1 + 1, but duplicates rows |
-| [ManyToOne](tests/EntityPreloadBlogManyHasOneTest.php)                 | 1 + n      | 1 + 1                    | 1, but duplicates rows | 1 + 1        | 1 + 1                          |
-| [ManyToOneDeep](tests/EntityPreloadBlogManyHasOneDeepTest.php)         | 1 + n + n  | 1 + 1 + 1                | 1, but duplicates rows | 1 + 1 + n    | 1 + 1 + 1                      |
-| [ManyToMany](tests/EntityPreloadBlogManyHasManyTest.php)               | 1 + n      | impossible in Doctrine 3 | 1, but duplicates rows | 1 + n        | 1 + 1                          |
+|                                                                        | Default                 | Manual Preload                        | Fetch Join                             | setFetchMode            | **EntityPreloader**                            |
+|------------------------------------------------------------------------|-------------------------|---------------------------------------|----------------------------------------|-------------------------|------------------------------------------------|
+| [OneToMany](tests/EntityPreloadBlogOneHasManyTest.php)                 | :red_circle: 1 + n      | :red_circle: impossible in Doctrine 3 | :orange_circle: 1, but duplicates rows | :green_circle: 1 + 1    | :green_circle: 1 + 1                           |
+| [OneToManyDeep](tests/EntityPreloadBlogOneHasManyDeepTest.php)         | :red_circle: 1 + n + n² | :red_circle: impossible in Doctrine 3 | :orange_circle: 1, but duplicates rows | :red_circle: 1 + 1 + n² | :green_circle: 1 + 1 + 1                       |
+| [OneToManyAbstract](tests/EntityPreloadBlogOneHasManyAbstractTest.php) | :red_circle: 1 + n + n² | :red_circle: impossible in Doctrine 3 | :orange_circle: 1, but duplicates rows | :red_circle: 1 + 1 + n² | :orange_circle: 1 + 1 + 1, but duplicates rows |
+| [ManyToOne](tests/EntityPreloadBlogManyHasOneTest.php)                 | :red_circle: 1 + n      | :green_circle: 1 + 1                  | :orange_circle: 1, but duplicates rows | :green_circle: 1 + 1    | :green_circle: 1 + 1                           |
+| [ManyToOneDeep](tests/EntityPreloadBlogManyHasOneDeepTest.php)         | :red_circle: 1 + n + n  | :green_circle: 1 + 1 + 1              | :orange_circle: 1, but duplicates rows | :red_circle: 1 + 1 + n  | :green_circle: 1 + 1 + 1                       |
+| [ManyToMany](tests/EntityPreloadBlogManyHasManyTest.php)               | :red_circle: 1 + n      | :red_circle: impossible in Doctrine 3 | :orange_circle: 1, but duplicates rows | :red_circle: 1 + n      | :green_circle: 1 + 1                           |
 
 Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
 
