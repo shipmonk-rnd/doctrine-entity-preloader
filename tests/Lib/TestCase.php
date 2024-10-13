@@ -2,6 +2,7 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader\Lib;
 
+use Composer\InstalledVersions;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
 use Doctrine\ORM\EntityManager;
@@ -23,6 +24,7 @@ use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Tag;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\User;
 use Throwable;
 use function unlink;
+use function version_compare;
 
 abstract class TestCase extends PhpUnitTestCase
 {
@@ -173,6 +175,15 @@ abstract class TestCase extends PhpUnitTestCase
         }
 
         return $freshEntity;
+    }
+
+    protected function skipIfPartialEntitiesAreNotSupported(): void
+    {
+        $ormVersion = InstalledVersions::getVersion('doctrine/orm') ?? '0.0.0';
+
+        if (version_compare($ormVersion, '3.0.0', '>=') && version_compare($ormVersion, '3.3.0', '<')) {
+            self::markTestSkipped('Partial entities are not supported in Doctrine ORM versions 3.0 to 3.2');
+        }
     }
 
     protected function getQueryLogger(): QueryLogger

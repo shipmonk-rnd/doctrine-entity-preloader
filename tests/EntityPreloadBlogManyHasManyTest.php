@@ -23,6 +23,30 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         ]);
     }
 
+    public function testOneHasManyWithWithManualPreloadUsingPartial(): void
+    {
+        $this->skipIfPartialEntitiesAreNotSupported();
+        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+
+        $this->getEntityManager()->createQueryBuilder()
+            ->select('PARTIAL article.{id}', 'tag')
+            ->from(Article::class, 'article')
+            ->leftJoin('article.tags', 'tag')
+            ->where('article IN (:articles)')
+            ->setParameter('articles', $articles)
+            ->getQuery()
+            ->getResult();
+
+        $this->readTagLabels($articles);
+
+        self::assertAggregatedQueries([
+            ['count' => 1, 'query' => 'SELECT * FROM article t0'],
+            ['count' => 1, 'query' => 'SELECT * FROM article a0_ LEFT JOIN article_tag a2_ ON a0_.id = a2_.article_id LEFT JOIN tag t1_ ON t1_.id = a2_.tag_id WHERE a0_.id IN (?, ?, ?, ?, ?)'],
+        ]);
+    }
+
     public function testManyHasManyWithFetchJoin(): void
     {
         $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);

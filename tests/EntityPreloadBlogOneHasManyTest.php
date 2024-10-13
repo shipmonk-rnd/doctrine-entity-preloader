@@ -2,13 +2,10 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
-use Composer\InstalledVersions;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\Query\QueryException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
-use function str_starts_with;
 
 class EntityPreloadBlogOneHasManyTest extends TestCase
 {
@@ -52,31 +49,26 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
 
     public function testOneHasManyWithWithManualPreloadUsingPartial(): void
     {
+        $this->skipIfPartialEntitiesAreNotSupported();
         $this->createDummyBlogData(categoryCount: 5, articleInEachCategoryCount: 5);
 
         $categories = $this->getEntityManager()->getRepository(Category::class)->findAll();
 
-        $query = $this->getEntityManager()->createQueryBuilder()
+        $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL category.{id}', 'article')
             ->from(Category::class, 'category')
             ->leftJoin('category.articles', 'article')
             ->where('category IN (:categories)')
             ->setParameter('categories', $categories)
-            ->getQuery();
+            ->getQuery()
+            ->getResult();
 
-        if (str_starts_with(InstalledVersions::getVersion('doctrine/orm') ?? 'unknown', '3.')) {
-            self::assertException(QueryException::class, null, static fn() => $query->getResult());
+        $this->readArticleTitles($categories);
 
-        } else {
-            $query->getResult();
-
-            $this->readArticleTitles($categories);
-
-            self::assertAggregatedQueries([
-                ['count' => 1, 'query' => 'SELECT * FROM category t0'],
-                ['count' => 1, 'query' => 'SELECT * FROM category c0_ LEFT JOIN article a1_ ON c0_.id = a1_.category_id WHERE c0_.id IN (?, ?, ?, ?, ?)'],
-            ]);
-        }
+        self::assertAggregatedQueries([
+            ['count' => 1, 'query' => 'SELECT * FROM category t0'],
+            ['count' => 1, 'query' => 'SELECT * FROM category c0_ LEFT JOIN article a1_ ON c0_.id = a1_.category_id WHERE c0_.id IN (?, ?, ?, ?, ?)'],
+        ]);
     }
 
     public function testOneHasManyWithFetchJoin(): void
@@ -137,6 +129,8 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
     private function readArticleTitles(array $categories): void
     {
         foreach ($categories as $category) {
+            $category->getName();
+
             foreach ($category->getArticles() as $article) {
                 $article->getTitle();
             }
