@@ -2,9 +2,9 @@
 
 `shipmonk/doctrine-entity-preloader` is a PHP library designed to tackle the n+1 query problem in Doctrine ORM by efficiently preloading related entities. This library offers a flexible and powerful way to optimize database access patterns, especially in cases with complex entity relationships.
 
-- 🚀 **Performance Boost:** Minimizes n+1 issues by preloading related entities with **constant number of queries**.
-- 🔄 **Flexible:** Supports all associations: `#[OneToOne]`, `#[OneToMany]`, `#[ManyToOne]`, and `#[ManyToMany]`.
-- 💡 **Easy Integration:** Simple to integrate with your existing Doctrine setup.
+- :rocket: **Performance Boost:** Minimizes n+1 issues by preloading related entities with **constant number of queries**.
+- :arrows_counterclockwise: **Flexible:** Supports all associations: `#[OneToOne]`, `#[OneToMany]`, `#[ManyToOne]`, and `#[ManyToMany]`.
+- :bulb: **Easy Integration:** Simple to integrate with your existing Doctrine setup.
 
 
 ## Comparison
