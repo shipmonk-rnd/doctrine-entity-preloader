@@ -2,9 +2,32 @@
 
 `shipmonk/doctrine-entity-preloader` is a PHP library designed to tackle the n+1 query problem in Doctrine ORM by efficiently preloading related entities. This library offers a flexible and powerful way to optimize database access patterns, especially in cases with complex entity relationships.
 
-- 🚀 **Performance Boost:** Minimizes n+1 issues by preloading related entities with **constant number of queries**.
-- 🔄 **Flexible:** Supports all associations: `#[OneToOne]`, `#[OneToMany]`, `#[ManyToOne]`, and `#[ManyToMany]`.
-- 💡 **Easy Integration:** Simple to integrate with your existing Doctrine setup.
+- :rocket: **Performance Boost:** Minimizes n+1 issues by preloading related entities with **constant number of queries**.
+- :arrows_counterclockwise: **Flexible:** Supports all associations: `#[OneToOne]`, `#[OneToMany]`, `#[ManyToOne]`, and `#[ManyToMany]`.
+- :bulb: **Easy Integration:** Simple to integrate with your existing Doctrine setup.
+
+
+## Comparison
+
+|                                                                        | [Default](https://docs.google.com/presentation/d/1sSlZOxmEUVKt0l8zhimex-6lR0ilC001GXh8colaXxg/edit#slide=id.g30998e74a82_0_0) | [Manual Preload](https://docs.google.com/presentation/d/1sSlZOxmEUVKt0l8zhimex-6lR0ilC001GXh8colaXxg/edit#slide=id.g309b68062f4_0_0) | [Fetch Join](https://docs.google.com/presentation/d/1sSlZOxmEUVKt0l8zhimex-6lR0ilC001GXh8colaXxg/edit#slide=id.g309b68062f4_0_15) | [setFetchMode](https://docs.google.com/presentation/d/1sSlZOxmEUVKt0l8zhimex-6lR0ilC001GXh8colaXxg/edit#slide=id.g309b68062f4_0_35) | [**EntityPreloader**](https://docs.google.com/presentation/d/1sSlZOxmEUVKt0l8zhimex-6lR0ilC001GXh8colaXxg/edit#slide=id.g309b68062f4_0_265) |
+|------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [OneToMany](tests/EntityPreloadBlogOneHasManyTest.php)                 | :red_circle: 1 + n                                                                                                            | :green_circle: 1 + 1                                                                                                                 | :orange_circle: 1, but duplicates rows                                                                                            | :green_circle: 1 + 1                                                                                                                | :green_circle: 1 + 1                                                                                                                        |
+| [OneToManyDeep](tests/EntityPreloadBlogOneHasManyDeepTest.php)         | :red_circle: 1 + n + n²                                                                                                       | :green_circle: 1 + 1 + 1                                                                                                             | :orange_circle: 1, but duplicates rows                                                                                            | :red_circle: 1 + 1 + n²                                                                                                             | :green_circle: 1 + 1 + 1                                                                                                                    |
+| [OneToManyAbstract](tests/EntityPreloadBlogOneHasManyAbstractTest.php) | :red_circle: 1 + n + n²                                                                                                       | :orange_circle: 1 + 1 + 1, but duplicates rows                                                                                       | :orange_circle: 1, but duplicates rows                                                                                            | :red_circle: 1 + 1 + n²                                                                                                             | :orange_circle: 1 + 1 + 1, but duplicates rows                                                                                              |
+| [ManyToOne](tests/EntityPreloadBlogManyHasOneTest.php)                 | :red_circle: 1 + n                                                                                                            | :green_circle: 1 + 1                                                                                                                 | :orange_circle: 1, but duplicates rows                                                                                            | :green_circle: 1 + 1                                                                                                                | :green_circle: 1 + 1                                                                                                                        |
+| [ManyToOneDeep](tests/EntityPreloadBlogManyHasOneDeepTest.php)         | :red_circle: 1 + n + n                                                                                                        | :green_circle: 1 + 1 + 1                                                                                                             | :orange_circle: 1, but duplicates rows                                                                                            | :red_circle: 1 + 1 + n                                                                                                              | :green_circle: 1 + 1 + 1                                                                                                                    |
+| [ManyToMany](tests/EntityPreloadBlogManyHasManyTest.php)               | :red_circle: 1 + n                                                                                                            | :green_circle: 1 + 1                                                                                                                 | :orange_circle: 1, but duplicates rows                                                                                            | :red_circle: 1 + n                                                                                                                  | :green_circle: 1 + 1                                                                                                                        |
+
+Unlike manual preload does not require writing custom queries for each association.
+
+Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
+
+Unlike `Doctrine\ORM\AbstractQuery::setFetchMode` it can
+
+* preload nested associations
+* preload `#[ManyToMany]` association
+* avoid additional queries fired by Doctrine during hydration process
+
 
 ## Installation
 
@@ -43,18 +66,6 @@ foreach ($categories as $category) {
     }
 }
 ```
-
-## Comparison vs. Fetch Joins
-
-Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
-
-## Comparison vs. `Doctrine\ORM\AbstractQuery::setFetchMode`
-
-Unlike `setFetchMode` it can
-
-* preload nested associations
-* preload `#[ManyToMany]` association
-* avoid additional queries fired by Doctrine during hydration process
 
 ## Configuration
 
