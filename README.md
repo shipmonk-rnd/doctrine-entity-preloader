@@ -18,9 +18,18 @@
 | [ManyToOneDeep](tests/EntityPreloadBlogManyHasOneDeepTest.php)         | :red_circle: 1 + n + n                                                                                                        | :green_circle: 3                                                                                                             | :orange_circle: 1, but<br>duplicate rows                                                                                          | :red_circle: 2 + n                                                                                                                  | :green_circle: 3                                                                                                                            |
 | [ManyToMany](tests/EntityPreloadBlogManyHasManyTest.php)               | :red_circle: 1 + n                                                                                                            | :green_circle: 2                                                                                                             | :orange_circle: 1, but<br>duplicate rows                                                                                          | :red_circle: 1 + n                                                                                                                  | :green_circle: 2                                                                                                                            |
 
-Unlike manual preload does not require writing custom queries for each association.
+
+### Comparison vs. Manual Preload
+
+Unlike manual preload, the EntityPreloader does not require writing custom queries for each association.
+
+### Comparison vs. Fetch Join
 
 Unlike fetch joins, the EntityPreloader does not fetches duplicate data, which slows down both the query and the hydration process, except when necessary to prevent additional queries fired by Doctrine during hydration process.
+
+The fetch join scales poorly with the number of associations. With every preloaded association, the number of duplicate rows grows. The EntityPreloader does not have this problem.
+
+### Comparison vs. setFetchMode
 
 Unlike `Doctrine\ORM\AbstractQuery::setFetchMode` it can
 
