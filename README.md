@@ -57,7 +57,7 @@ $categories = $entityManager->getRepository(Category::class)->findAll();
 
 $preloader = new EntityPreloader($entityManager);
 $articles = $preloader->preload($categories, 'articles'); // 1 query to preload articles
-$preloader->preload($articles, 'tags'); // 1 query to preload tags
+$preloader->preload($articles, 'tags'); // 2 queries to preload tags
 $preloader->preload($articles, 'comments'); // 1 query to preload comments
 
 // no more queries are needed now
