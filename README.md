@@ -4,7 +4,7 @@
 
 - :rocket: **Performance Boost:** Minimizes n+1 issues by preloading related entities with **constant number of queries**.
 - :arrows_counterclockwise: **Flexible:** Supports all associations: `#[OneToOne]`, `#[OneToMany]`, `#[ManyToOne]`, and `#[ManyToMany]`.
-- :bulb: **Easy Integration:** Simple to integrate with your existing Doctrine setup.
+- :bulb: **Easy Integration:** Simple to integrate with your existing Doctrine setup (supports both v2 and v3).
 
 
 ## Comparison
