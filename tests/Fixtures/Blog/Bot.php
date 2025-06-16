@@ -18,7 +18,11 @@ class Bot extends Contributor
     #[Column]
     private string $apiKeyHash;
 
-    public function __construct(string $name, string $apiKey, string $prompt)
+    public function __construct(
+        string $name,
+        string $apiKey,
+        string $prompt,
+    )
     {
         parent::__construct($name);
         $this->activePrompt = new BotPromptVersion($prompt);

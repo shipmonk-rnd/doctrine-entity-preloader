@@ -16,7 +16,7 @@ class EntityWithManyToOneOfManyToOneItselfCtiRelation extends TestEntityWithId
     private AbstractCtiEntityWithOptionalManyToOneItselfRelation $abstractEntityWithOptionalManyToOneItselfRelation;
 
     public function __construct(
-        AbstractCtiEntityWithOptionalManyToOneItselfRelation $abstractEntityWithOptionalManyToOneItselfRelation
+        AbstractCtiEntityWithOptionalManyToOneItselfRelation $abstractEntityWithOptionalManyToOneItselfRelation,
     )
     {
         $this->abstractEntityWithOptionalManyToOneItselfRelation = $abstractEntityWithOptionalManyToOneItselfRelation;

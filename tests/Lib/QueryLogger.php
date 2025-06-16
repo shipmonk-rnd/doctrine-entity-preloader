@@ -19,7 +19,11 @@ class QueryLogger extends AbstractLogger
     /**
      * @param array<mixed> $context
      */
-    public function log(mixed $level, Stringable|string $message, array $context = []): void
+    public function log(
+        mixed $level,
+        Stringable|string $message,
+        array $context = [],
+    ): void
     {
         if (isset($context['sql'])) {
             $this->queries[] = $context['sql'];

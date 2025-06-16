@@ -51,7 +51,7 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
             ->getQuery()
             ->getResult();
 
-        $subCategories = array_merge(...array_map(static fn(Category $category) => $category->getChildren()->toArray(), $rootCategories));
+        $subCategories = array_merge(...array_map(static fn (Category $category) => $category->getChildren()->toArray(), $rootCategories));
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL subCategory.{id}', 'subSubCategory')
             ->from(Category::class, 'subCategory')
@@ -134,7 +134,11 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
         ]);
     }
 
-    private function createCategoryTree(int $depth, int $branchingFactor, ?Category $parent = null): void
+    private function createCategoryTree(
+        int $depth,
+        int $branchingFactor,
+        ?Category $parent = null,
+    ): void
     {
         for ($i = 0; $i < $branchingFactor; $i++) {
             $category = new Category("Category $depth-$i", $parent);

@@ -35,6 +35,7 @@ class EntityPreloader
      * @param positive-int|null $batchSize
      * @param non-negative-int|null $maxFetchJoinSameFieldCount
      * @return list<E>
+     *
      * @template S of E
      */
     public function preload(
@@ -75,6 +76,7 @@ class EntityPreloader
     /**
      * @param list<S> $entities
      * @return class-string<S>|null
+     *
      * @template S of E
      */
     private function getCommonAncestor(array $entities): ?string
@@ -108,6 +110,7 @@ class EntityPreloader
      * @param positive-int $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @return list<T>
+     *
      * @template T of E
      */
     private function loadProxies(
@@ -151,6 +154,7 @@ class EntityPreloader
      * @param positive-int|null $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @return list<T>
+     *
      * @template S of E
      * @template T of E
      */
@@ -239,6 +243,7 @@ class EntityPreloader
      * @param array<string, PersistentCollection<int, T>> $uninitializedCollections
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @return array<string, T>
+     *
      * @template S of E
      * @template T of E
      */
@@ -290,6 +295,7 @@ class EntityPreloader
      * @param array<string, PersistentCollection<int, T>> $uninitializedCollections
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @return array<string, T>
+     *
      * @template S of E
      * @template T of E
      */
@@ -360,6 +366,7 @@ class EntityPreloader
      * @param positive-int|null $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @return list<T>
+     *
      * @template S of E
      * @template T of E
      */
@@ -400,6 +407,7 @@ class EntityPreloader
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @param array<string, 'asc'|'desc'> $orderBy
      * @return list<T>
+     *
      * @template T of E
      */
     private function loadEntitiesBy(
@@ -434,6 +442,7 @@ class EntityPreloader
     /**
      * @param ClassMetadata<S> $sourceClassMetadata
      * @param array<string, array<string, int>> $alreadyPreloadedJoins
+     *
      * @template S of E
      */
     private function addFetchJoinsToPreventFetchDuringHydration(

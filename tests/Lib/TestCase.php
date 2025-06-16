@@ -47,12 +47,18 @@ abstract class TestCase extends PhpUnitTestCase
     }
 
     /**
-     * @template T of Throwable
      * @param class-string<T> $type
      * @param callable(): mixed $cb
+     *
+     * @template T of Throwable
+     *
      * @param-immediately-invoked-callable $cb
      */
-    protected static function assertException(string $type, ?string $message, callable $cb): void
+    protected static function assertException(
+        string $type,
+        ?string $message,
+        callable $cb,
+    ): void
     {
         try {
             $cb();
@@ -145,6 +151,7 @@ abstract class TestCase extends PhpUnitTestCase
     /**
      * @param T $entity
      * @return T|null
+     *
      * @template T of object
      */
     protected function refreshEntity(object $entity): ?object
@@ -163,6 +170,7 @@ abstract class TestCase extends PhpUnitTestCase
     /**
      * @param T $entity
      * @return T
+     *
      * @template T of object
      */
     protected function refreshExistingEntity(object $entity): object
@@ -209,7 +217,10 @@ abstract class TestCase extends PhpUnitTestCase
         return new QueryLogger();
     }
 
-    private function createEntityManager(LoggerInterface $logger, bool $inMemory = true): EntityManagerInterface
+    private function createEntityManager(
+        LoggerInterface $logger,
+        bool $inMemory = true,
+    ): EntityManagerInterface
     {
         $config = ORMSetup::createAttributeMetadataConfiguration([__DIR__ . '/../Fixtures'], isDevMode: true, proxyDir: __DIR__ . '/../../cache/proxies');
         $config->setNamingStrategy(new UnderscoreNamingStrategy());

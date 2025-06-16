@@ -26,7 +26,11 @@ class Comment
     #[Column]
     private string $content;
 
-    public function __construct(Article $article, Contributor $author, string $content)
+    public function __construct(
+        Article $article,
+        Contributor $author,
+        string $content,
+    )
     {
         $this->article = $article;
         $this->author = $author;

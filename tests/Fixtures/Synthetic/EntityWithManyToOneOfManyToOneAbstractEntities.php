@@ -15,7 +15,7 @@ class EntityWithManyToOneOfManyToOneAbstractEntities extends TestEntityWithId
     private EntityWithManyToOneAbstractEntityWithNoRelations $entityWithManyToOneAbstractEntityWithNoRelations;
 
     public function __construct(
-        EntityWithManyToOneAbstractEntityWithNoRelations $entityWithManyToOneAbstractEntityWithNoRelations
+        EntityWithManyToOneAbstractEntityWithNoRelations $entityWithManyToOneAbstractEntityWithNoRelations,
     )
     {
         $this->entityWithManyToOneAbstractEntityWithNoRelations = $entityWithManyToOneAbstractEntityWithNoRelations;

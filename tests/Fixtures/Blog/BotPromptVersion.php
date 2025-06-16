@@ -29,7 +29,10 @@ class BotPromptVersion
     #[OneToOne(mappedBy: 'prevVersion')]
     private ?BotPromptVersion $nextVersion;
 
-    public function __construct(string $prompt, ?self $prevScript = null)
+    public function __construct(
+        string $prompt,
+        ?self $prevScript = null,
+    )
     {
         $this->version = ($prevScript->version ?? 0) + 1;
         $this->prompt = $prompt;
@@ -56,12 +59,12 @@ class BotPromptVersion
         return $this->prompt;
     }
 
-    public function getPrevVersion(): ?BotPromptVersion
+    public function getPrevVersion(): ?self
     {
         return $this->prevVersion;
     }
 
-    public function getNextVersion(): ?BotPromptVersion
+    public function getNextVersion(): ?self
     {
         return $this->nextVersion;
     }

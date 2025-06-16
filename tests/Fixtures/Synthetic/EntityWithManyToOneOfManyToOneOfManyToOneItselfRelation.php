@@ -18,7 +18,7 @@ class EntityWithManyToOneOfManyToOneOfManyToOneItselfRelation extends TestEntity
     private EntityWithManyToOneOfManyToOneItselfStiRelation $entityWithManyToOneOfManyToOneItselfRelation;
 
     public function __construct(
-        EntityWithManyToOneOfManyToOneItselfStiRelation $entityWithManyToOneOfManyToOneItselfRelation
+        EntityWithManyToOneOfManyToOneItselfStiRelation $entityWithManyToOneOfManyToOneItselfRelation,
     )
     {
         $this->entityWithManyToOneOfManyToOneItselfRelation = $entityWithManyToOneOfManyToOneItselfRelation;

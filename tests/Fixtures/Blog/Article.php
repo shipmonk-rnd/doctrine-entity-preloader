@@ -45,7 +45,11 @@ class Article
     #[OrderBy(['id' => 'DESC'])]
     private Collection $comments;
 
-    public function __construct(string $title, string $content, ?Category $category = null)
+    public function __construct(
+        string $title,
+        string $content,
+        ?Category $category = null,
+    )
     {
         $this->title = $title;
         $this->content = $content;
