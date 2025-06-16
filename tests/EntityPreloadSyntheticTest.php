@@ -902,7 +902,7 @@ class EntityPreloadSyntheticTest extends TestCase
     }
 
     private function givenEntityWithManyToOneEntityWithNoRelations(
-        EntityWithNoRelations $entityWithNoRelations
+        EntityWithNoRelations $entityWithNoRelations,
     ): EntityWithManyToOneEntityWithNoRelations
     {
         $entityWithManyToOneEntityWithNoRelations = new EntityWithManyToOneEntityWithNoRelations($entityWithNoRelations);
@@ -920,7 +920,7 @@ class EntityPreloadSyntheticTest extends TestCase
     }
 
     private function givenEntityWithManyToOneAbstractEntityWithNoRelations(
-        AbstractEntityWithNoRelations $abstractEntityWithNoRelations
+        AbstractEntityWithNoRelations $abstractEntityWithNoRelations,
     ): EntityWithManyToOneAbstractEntityWithNoRelations
     {
         $entityWithManyToOneAbstractEntityWithNoRelations = new EntityWithManyToOneAbstractEntityWithNoRelations($abstractEntityWithNoRelations);
@@ -930,7 +930,7 @@ class EntityPreloadSyntheticTest extends TestCase
     }
 
     private function givenEntityWithManyToOneOfManyToOneAbstractEntities(
-        EntityWithManyToOneAbstractEntityWithNoRelations $entityWithManyToOneAbstractEntityWithNoRelations
+        EntityWithManyToOneAbstractEntityWithNoRelations $entityWithManyToOneAbstractEntityWithNoRelations,
     ): EntityWithManyToOneOfManyToOneAbstractEntities
     {
         $entityWithManyToOneOfManyToOneAbstractEntities = new EntityWithManyToOneOfManyToOneAbstractEntities($entityWithManyToOneAbstractEntityWithNoRelations);
@@ -969,7 +969,7 @@ class EntityPreloadSyntheticTest extends TestCase
     }
 
     private function givenConcreteEntityWithOptionalManyToOneItselfRelation(
-        ?ConcreteStiEntityWithOptionalManyToOneOfItselfRelation $parent
+        ?ConcreteStiEntityWithOptionalManyToOneOfItselfRelation $parent,
     ): ConcreteStiEntityWithOptionalManyToOneOfItselfRelation
     {
         $entity = new ConcreteStiEntityWithOptionalManyToOneOfItselfRelation($parent);
@@ -980,7 +980,7 @@ class EntityPreloadSyntheticTest extends TestCase
     }
 
     private function givenWithManyToOneOfManyToOneItselfRelation(
-        ConcreteStiEntityWithOptionalManyToOneOfItselfRelation $currentEntityWithRelationToItself
+        ConcreteStiEntityWithOptionalManyToOneOfItselfRelation $currentEntityWithRelationToItself,
     ): EntityWithManyToOneOfManyToOneItselfStiRelation
     {
         $entityWithManyToOneOfManyToOneItselfRelation = new EntityWithManyToOneOfManyToOneItselfStiRelation($currentEntityWithRelationToItself);
@@ -991,7 +991,7 @@ class EntityPreloadSyntheticTest extends TestCase
     }
 
     private function givenWithManyToOneOfManyToOneOfManyToOneItselfRelation(
-        EntityWithManyToOneOfManyToOneItselfStiRelation $entityWithManyToOneOfManyToOneItselfRelation
+        EntityWithManyToOneOfManyToOneItselfStiRelation $entityWithManyToOneOfManyToOneItselfRelation,
     ): EntityWithManyToOneOfManyToOneOfManyToOneItselfRelation
     {
         $entityWithManyToOneOfManyToOneOfManyToOneItselfRelation = new EntityWithManyToOneOfManyToOneOfManyToOneItselfRelation($entityWithManyToOneOfManyToOneItselfRelation);

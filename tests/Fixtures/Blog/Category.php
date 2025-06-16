@@ -39,7 +39,10 @@ class Category
     #[OneToMany(targetEntity: Article::class, mappedBy: 'category')]
     private Collection $articles;
 
-    public function __construct(string $name, ?self $parent = null)
+    public function __construct(
+        string $name,
+        ?self $parent = null,
+    )
     {
         $this->name = $name;
         $this->parent = $parent;
@@ -83,7 +86,7 @@ class Category
     /**
      * @internal
      */
-    public function addChild(Category $category): void
+    public function addChild(self $category): void
     {
         if (!$this->children->contains($category)) {
             $this->children->add($category);

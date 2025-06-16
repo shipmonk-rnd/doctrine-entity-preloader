@@ -18,7 +18,11 @@ class User extends Contributor
     #[Column]
     private string $passwordHash;
 
-    public function __construct(string $name, string $email, string $password)
+    public function __construct(
+        string $name,
+        string $email,
+        string $password,
+    )
     {
         parent::__construct($name);
         $this->email = $email;
