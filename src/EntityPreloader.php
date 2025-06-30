@@ -457,14 +457,14 @@ class EntityPreloader
         return $queryBuilder->getQuery()->getResult();
     }
 
-    private function deduceArrayParameterType(Type $dbalType): ?ArrayParameterType
+    private function deduceArrayParameterType(Type $dbalType): ArrayParameterType|int|null // @phpstan-ignore return.unusedType (old dbal compat)
     {
         return match ($dbalType->getBindingType()) {
             ParameterType::INTEGER => ArrayParameterType::INTEGER,
             ParameterType::STRING => ArrayParameterType::STRING,
             ParameterType::ASCII => ArrayParameterType::ASCII,
             ParameterType::BINARY => ArrayParameterType::BINARY,
-            default => null, // @phpstan-ignore shipmonk.defaultMatchArmWithEnum
+            default => null,
         };
     }
 

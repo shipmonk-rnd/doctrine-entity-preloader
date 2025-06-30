@@ -6,9 +6,12 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 use LogicException;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Compat\CompatibilityType;
 
 final class BinaryIdType extends Type
 {
+
+    use CompatibilityType;
 
     public const NAME = 'binary_id';
 
@@ -60,7 +63,7 @@ final class BinaryIdType extends Type
         return self::NAME;
     }
 
-    public function getBindingType(): ParameterType
+    public function doGetBindingType(): ParameterType|int // @phpstan-ignore return.unusedType (old dbal compat)
     {
         return ParameterType::BINARY;
     }

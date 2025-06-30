@@ -10,6 +10,9 @@ parameters:
     paths:
         - src
         - tests
+    excludePaths:
+        analyse:
+            - tests/Fixtures/Compat
     checkMissingCallableSignature: true
     checkUninitializedProperties: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
@@ -28,6 +31,10 @@ parameters:
             message: '#Strict comparison using === between ReflectionProperty and null will always evaluate to false#'
             identifier: 'identical.alwaysFalse'
             reportUnmatched: false
+            path: 'src/EntityPreloader.php'
+        -
+            identifier: shipmonk.defaultMatchArmWithEnum
+            reportUnmatched: false # only new dbal issue
             path: 'src/EntityPreloader.php'
         -
             message: '#Result of \|\| is always false#'
