@@ -55,6 +55,11 @@ final class BinaryIdType extends Type
         ]);
     }
 
+    public function getName(): string
+    {
+        return self::NAME;
+    }
+
     public function getBindingType(): ParameterType
     {
         return ParameterType::BINARY;
