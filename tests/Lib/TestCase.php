@@ -5,6 +5,7 @@ namespace ShipMonkTests\DoctrineEntityPreloader\Lib;
 use Composer\InstalledVersions;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
+use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
@@ -17,6 +18,7 @@ use Psr\Log\LoggerInterface;
 use ShipMonk\DoctrineEntityPreloader\EntityPreloader;
 use ShipMonk\DoctrineEntityPreloader\Exception\LogicException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\BinaryIdType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Bot;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Comment;
@@ -237,6 +239,10 @@ abstract class TestCase extends PhpUnitTestCase
 
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite'] + $driverOptions, $config);
         $entityManager = new EntityManager($connection, $config);
+
+        if (!DbalType::hasType(BinaryIdType::NAME)) {
+            DbalType::addType(BinaryIdType::NAME, BinaryIdType::class);
+        }
 
         $schemaTool = new SchemaTool($entityManager);
         $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());

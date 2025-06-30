@@ -2,10 +2,12 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
+use function array_map;
 
 class EntityPreloadBlogOneHasManyTest extends TestCase
 {
@@ -53,13 +55,17 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
         $this->createDummyBlogData(categoryCount: 5, articleInEachCategoryCount: 5);
 
         $categories = $this->getEntityManager()->getRepository(Category::class)->findAll();
+        $rawCategoryIds = array_map(
+            static fn (Category $category): string => $category->getId()->getBytes(),
+            $categories,
+        );
 
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL category.{id}', 'article')
             ->from(Category::class, 'category')
             ->leftJoin('category.articles', 'article')
             ->where('category IN (:categories)')
-            ->setParameter('categories', $categories)
+            ->setParameter('categories', $rawCategoryIds, ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
 

@@ -7,19 +7,12 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ReadableCollection;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
 
 #[Entity]
-class Category
+class Category extends TestEntityWithBinaryId
 {
-
-    #[Id]
-    #[Column]
-    #[GeneratedValue]
-    private int $id;
 
     #[Column]
     private string $name;
@@ -44,17 +37,13 @@ class Category
         ?self $parent = null,
     )
     {
+        parent::__construct();
         $this->name = $name;
         $this->parent = $parent;
         $this->children = new ArrayCollection();
         $this->articles = new ArrayCollection();
 
         $parent?->addChild($this);
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
     }
 
     public function getName(): string

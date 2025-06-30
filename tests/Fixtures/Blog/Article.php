@@ -7,21 +7,14 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ReadableCollection;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToMany;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\OrderBy;
 
 #[Entity]
-class Article
+class Article extends TestEntityWithBinaryId
 {
-
-    #[Id]
-    #[Column]
-    #[GeneratedValue]
-    private int $id;
 
     #[Column]
     private string $title;
@@ -51,6 +44,7 @@ class Article
         ?Category $category = null,
     )
     {
+        parent::__construct();
         $this->title = $title;
         $this->content = $content;
         $this->category = $category;
@@ -58,11 +52,6 @@ class Article
         $this->comments = new ArrayCollection();
 
         $category?->addArticle($this);
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
     }
 
     public function getTitle(): string

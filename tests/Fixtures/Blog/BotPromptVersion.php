@@ -4,18 +4,11 @@ namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog;
 
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\OneToOne;
 
 #[Entity]
-class BotPromptVersion
+class BotPromptVersion extends TestEntityWithBinaryId
 {
-
-    #[Id]
-    #[Column]
-    #[GeneratedValue]
-    private int $id;
 
     #[Column]
     private int $version;
@@ -34,6 +27,7 @@ class BotPromptVersion
         ?self $prevScript = null,
     )
     {
+        parent::__construct();
         $this->version = ($prevScript->version ?? 0) + 1;
         $this->prompt = $prompt;
         $this->prevVersion = $prevScript;
@@ -42,11 +36,6 @@ class BotPromptVersion
         if ($prevScript !== null) {
             $prevScript->nextVersion = $this;
         }
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
     }
 
     public function getVersion(): int

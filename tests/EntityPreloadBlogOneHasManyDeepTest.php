@@ -2,6 +2,7 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
@@ -42,22 +43,26 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
             ->getQuery()
             ->getResult();
 
+        $rawRootCategoryIds = array_map(static fn (Category $category) => $category->getId()->getBytes(), $rootCategories);
+
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL category.{id}', 'subCategory')
             ->from(Category::class, 'category')
             ->leftJoin('category.children', 'subCategory')
             ->where('category IN (:categories)')
-            ->setParameter('categories', $rootCategories)
+            ->setParameter('categories', $rawRootCategoryIds, ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
 
         $subCategories = array_merge(...array_map(static fn (Category $category) => $category->getChildren()->toArray(), $rootCategories));
+        $rawSubCategoryIds = array_map(static fn (Category $category) => $category->getId()->getBytes(), $subCategories);
+
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL subCategory.{id}', 'subSubCategory')
             ->from(Category::class, 'subCategory')
             ->leftJoin('subCategory.children', 'subSubCategory')
             ->where('subCategory IN (:subCategories)')
-            ->setParameter('subCategories', $subCategories)
+            ->setParameter('subCategories', $rawSubCategoryIds, ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
 

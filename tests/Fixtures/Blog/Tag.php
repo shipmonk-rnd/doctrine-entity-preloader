@@ -7,18 +7,11 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ReadableCollection;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToMany;
 
 #[Entity]
-class Tag
+class Tag extends TestEntityWithBinaryId
 {
-
-    #[Id]
-    #[Column]
-    #[GeneratedValue]
-    private int $id;
 
     #[Column]
     private string $label;
@@ -31,13 +24,9 @@ class Tag
 
     public function __construct(string $label)
     {
+        parent::__construct();
         $this->label = $label;
         $this->articles = new ArrayCollection();
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
     }
 
     public function getLabel(): string

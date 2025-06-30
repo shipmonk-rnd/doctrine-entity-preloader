@@ -3,6 +3,9 @@
 namespace ShipMonk\DoctrineEntityPreloader;
 
 use ArrayAccess;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\PersistentCollection;
@@ -141,7 +144,7 @@ class EntityPreloader
         }
 
         foreach (array_chunk($uninitializedIds, $batchSize) as $idsChunk) {
-            $this->loadEntitiesBy($classMetadata, $identifierName, $idsChunk, $maxFetchJoinSameFieldCount);
+            $this->loadEntitiesBy($classMetadata, $identifierName, $classMetadata, $idsChunk, $maxFetchJoinSameFieldCount);
         }
 
         return array_values($uniqueEntities);
@@ -270,6 +273,7 @@ class EntityPreloader
         $targetEntitiesList = $this->loadEntitiesBy(
             $targetClassMetadata,
             $targetPropertyName,
+            $sourceClassMetadata,
             $uninitializedSourceEntityIdsChunk,
             $maxFetchJoinSameFieldCount,
             $associationMapping['orderBy'] ?? [],
@@ -318,12 +322,18 @@ class EntityPreloader
         $sourceIdentifierName = $sourceClassMetadata->getSingleIdentifierFieldName();
         $targetIdentifierName = $targetClassMetadata->getSingleIdentifierFieldName();
 
+        $sourceIdentifierType = $this->getIdentifierFieldType($sourceClassMetadata);
+
         $manyToManyRows = $this->entityManager->createQueryBuilder()
             ->select("source.{$sourceIdentifierName} AS sourceId", "target.{$targetIdentifierName} AS targetId")
             ->from($sourceClassMetadata->getName(), 'source')
             ->join("source.{$sourcePropertyName}", 'target')
             ->andWhere('source IN (:sourceEntityIds)')
-            ->setParameter('sourceEntityIds', $uninitializedSourceEntityIdsChunk)
+            ->setParameter(
+                'sourceEntityIds',
+                $this->convertFieldValuesToDatabaseValues($sourceIdentifierType, $uninitializedSourceEntityIdsChunk),
+                $this->deduceArrayParameterType($sourceIdentifierType),
+            )
             ->getQuery()
             ->getResult();
 
@@ -345,7 +355,7 @@ class EntityPreloader
             $uninitializedTargetEntityIds[$targetEntityKey] = $targetEntityId;
         }
 
-        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
+        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $sourceClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
             $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
             $targetEntities[$targetEntityKey] = $targetEntity;
         }
@@ -404,15 +414,18 @@ class EntityPreloader
     /**
      * @param ClassMetadata<T> $targetClassMetadata
      * @param list<mixed> $fieldValues
+     * @param ClassMetadata<R> $referencedClassMetadata
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @param array<string, 'asc'|'desc'> $orderBy
      * @return list<T>
      *
      * @template T of E
+     * @template R of E
      */
     private function loadEntitiesBy(
         ClassMetadata $targetClassMetadata,
         string $fieldName,
+        ClassMetadata $referencedClassMetadata,
         array $fieldValues,
         int $maxFetchJoinSameFieldCount,
         array $orderBy = [],
@@ -422,13 +435,18 @@ class EntityPreloader
             return [];
         }
 
+        $referencedType = $this->getIdentifierFieldType($referencedClassMetadata);
         $rootLevelAlias = 'e';
 
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select($rootLevelAlias)
             ->from($targetClassMetadata->getName(), $rootLevelAlias)
             ->andWhere("{$rootLevelAlias}.{$fieldName} IN (:fieldValues)")
-            ->setParameter('fieldValues', $fieldValues);
+            ->setParameter(
+                'fieldValues',
+                $this->convertFieldValuesToDatabaseValues($referencedType, $fieldValues),
+                $this->deduceArrayParameterType($referencedType),
+            );
 
         $this->addFetchJoinsToPreventFetchDuringHydration($rootLevelAlias, $queryBuilder, $targetClassMetadata, $maxFetchJoinSameFieldCount);
 
@@ -437,6 +455,54 @@ class EntityPreloader
         }
 
         return $queryBuilder->getQuery()->getResult();
+    }
+
+    private function deduceArrayParameterType(Type $dbalType): ?ArrayParameterType
+    {
+        return match ($dbalType->getBindingType()) {
+            ParameterType::INTEGER => ArrayParameterType::INTEGER,
+            ParameterType::STRING => ArrayParameterType::STRING,
+            ParameterType::ASCII => ArrayParameterType::ASCII,
+            ParameterType::BINARY => ArrayParameterType::BINARY,
+            default => null, // @phpstan-ignore shipmonk.defaultMatchArmWithEnum
+        };
+    }
+
+    /**
+     * @param array<mixed> $fieldValues
+     * @return list<mixed>
+     */
+    private function convertFieldValuesToDatabaseValues(
+        Type $dbalType,
+        array $fieldValues,
+    ): array
+    {
+        $connection = $this->entityManager->getConnection();
+        $platform = $connection->getDatabasePlatform();
+
+        $convertedValues = [];
+        foreach ($fieldValues as $value) {
+            $convertedValues[] = $dbalType->convertToDatabaseValue($value, $platform);
+        }
+
+        return $convertedValues;
+    }
+
+    /**
+     * @param ClassMetadata<C> $classMetadata
+     *
+     * @template C of E
+     */
+    private function getIdentifierFieldType(ClassMetadata $classMetadata): Type
+    {
+        $identifierName = $classMetadata->getSingleIdentifierFieldName();
+        $sourceIdTypeName = $classMetadata->getTypeOfField($identifierName);
+
+        if ($sourceIdTypeName === null) {
+            throw new LogicException("Identifier field '{$identifierName}' for class '{$classMetadata->getName()}' has unknown field type.");
+        }
+
+        return Type::getType($sourceIdTypeName);
     }
 
     /**

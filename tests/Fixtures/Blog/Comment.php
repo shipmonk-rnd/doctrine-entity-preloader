@@ -4,18 +4,11 @@ namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog;
 
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToOne;
 
 #[Entity]
-class Comment
+class Comment extends TestEntityWithBinaryId
 {
-
-    #[Id]
-    #[Column]
-    #[GeneratedValue]
-    private int $id;
 
     #[ManyToOne(targetEntity: Article::class, inversedBy: 'comments')]
     private Article $article;
@@ -32,17 +25,13 @@ class Comment
         string $content,
     )
     {
+        parent::__construct();
         $this->article = $article;
         $this->author = $author;
         $this->content = $content;
 
         $article->addComment($this);
         $author->addComment($this);
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
     }
 
     public function getArticle(): Article
