@@ -5,6 +5,9 @@ namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Compat;
 use Doctrine\DBAL\ParameterType;
 use function enum_exists;
 
+// phpcs:disable Generic.Classes.DuplicateClassName.Found
+// phpcs:disable Generic.Files.OneTraitPerFile.MultipleFound
+
 if (!enum_exists(ParameterType::class)) {
     trait CompatibilityType
     {
