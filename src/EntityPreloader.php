@@ -8,10 +8,10 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\PropertyAccessors\PropertyAccessor;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\QueryBuilder;
 use LogicException;
-use ReflectionProperty;
 use function array_chunk;
 use function array_values;
 use function count;
@@ -123,10 +123,10 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        $identifierReflection = $classMetadata->getSingleIdReflectionProperty(); // e.g. Order::$id reflection
+        $identifierAccessor = $classMetadata->getSingleIdPropertyAccessor(); // e.g. Order::$id reflection
         $identifierName = $classMetadata->getSingleIdentifierFieldName(); // e.g. 'id'
 
-        if ($identifierReflection === null) {
+        if ($identifierAccessor === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
@@ -134,7 +134,7 @@ class EntityPreloader
         $uninitializedIds = [];
 
         foreach ($entities as $entity) {
-            $entityId = $identifierReflection->getValue($entity);
+            $entityId = $identifierAccessor->getValue($entity);
             $entityKey = (string) $entityId;
             $uniqueEntities[$entityKey] = $entity;
 
@@ -170,11 +170,11 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        $sourceIdentifierReflection = $sourceClassMetadata->getSingleIdReflectionProperty(); // e.g. Order::$id reflection
-        $sourcePropertyReflection = $sourceClassMetadata->getReflectionProperty($sourcePropertyName); // e.g. Order::$items reflection
-        $targetIdentifierReflection = $targetClassMetadata->getSingleIdReflectionProperty();
+        $sourceIdentifierAccessor = $sourceClassMetadata->getSingleIdPropertyAccessor(); // e.g. Order::$id reflection
+        $sourcePropertyAccessor = $sourceClassMetadata->getPropertyAccessor($sourcePropertyName); // e.g. Order::$items reflection
+        $targetIdentifierAccessor = $targetClassMetadata->getSingleIdPropertyAccessor();
 
-        if ($sourceIdentifierReflection === null || $sourcePropertyReflection === null || $targetIdentifierReflection === null) {
+        if ($sourceIdentifierAccessor === null || $sourcePropertyAccessor === null || $targetIdentifierAccessor === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
@@ -184,9 +184,9 @@ class EntityPreloader
         $uninitializedCollections = [];
 
         foreach ($sourceEntities as $sourceEntity) {
-            $sourceEntityId = $sourceIdentifierReflection->getValue($sourceEntity);
+            $sourceEntityId = $sourceIdentifierAccessor->getValue($sourceEntity);
             $sourceEntityKey = (string) $sourceEntityId;
-            $sourceEntityCollection = $sourcePropertyReflection->getValue($sourceEntity);
+            $sourceEntityCollection = $sourcePropertyAccessor->getValue($sourceEntity);
 
             if (
                 $sourceEntityCollection instanceof PersistentCollection
@@ -199,7 +199,7 @@ class EntityPreloader
             }
 
             foreach ($sourceEntityCollection as $targetEntity) {
-                $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+                $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
                 $targetEntities[$targetEntityKey] = $targetEntity;
             }
         }
@@ -216,10 +216,10 @@ class EntityPreloader
             $targetEntitiesChunk = $innerLoader(
                 associationMapping: $associationMapping,
                 sourceClassMetadata: $sourceClassMetadata,
-                sourceIdentifierReflection: $sourceIdentifierReflection,
+                sourceIdentifierAccessor: $sourceIdentifierAccessor,
                 sourcePropertyName: $sourcePropertyName,
                 targetClassMetadata: $targetClassMetadata,
-                targetIdentifierReflection: $targetIdentifierReflection,
+                targetIdentifierAccessor: $targetIdentifierAccessor,
                 uninitializedSourceEntityIdsChunk: array_values($uninitializedSourceEntityIdsChunk),
                 uninitializedCollections: $uninitializedCollections,
                 maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount,
@@ -253,20 +253,20 @@ class EntityPreloader
     private function preloadOneToManyInner(
         array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
-        ReflectionProperty $sourceIdentifierReflection,
+        PropertyAccessor $sourceIdentifierAccessor,
         string $sourcePropertyName,
         ClassMetadata $targetClassMetadata,
-        ReflectionProperty $targetIdentifierReflection,
+        PropertyAccessor $targetIdentifierAccessor,
         array $uninitializedSourceEntityIdsChunk,
         array $uninitializedCollections,
         int $maxFetchJoinSameFieldCount,
     ): array
     {
         $targetPropertyName = $sourceClassMetadata->getAssociationMappedByTargetField($sourcePropertyName); // e.g. 'order'
-        $targetPropertyReflection = $targetClassMetadata->getReflectionProperty($targetPropertyName); // e.g. Item::$order reflection
+        $targetPropertyAccessor = $targetClassMetadata->getPropertyAccessor($targetPropertyName); // e.g. Item::$order reflection
         $targetEntities = [];
 
-        if ($targetPropertyReflection === null) {
+        if ($targetPropertyAccessor === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
@@ -280,11 +280,11 @@ class EntityPreloader
         );
 
         foreach ($targetEntitiesList as $targetEntity) {
-            $sourceEntity = $targetPropertyReflection->getValue($targetEntity);
-            $sourceEntityKey = (string) $sourceIdentifierReflection->getValue($sourceEntity);
+            $sourceEntity = $targetPropertyAccessor->getValue($targetEntity);
+            $sourceEntityKey = (string) $sourceIdentifierAccessor->getValue($sourceEntity);
             $uninitializedCollections[$sourceEntityKey]->add($targetEntity);
 
-            $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+            $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
             $targetEntities[$targetEntityKey] = $targetEntity;
         }
 
@@ -306,10 +306,10 @@ class EntityPreloader
     private function preloadManyToManyInner(
         array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
-        ReflectionProperty $sourceIdentifierReflection,
+        PropertyAccessor $sourceIdentifierAccessor,
         string $sourcePropertyName,
         ClassMetadata $targetClassMetadata,
-        ReflectionProperty $targetIdentifierReflection,
+        PropertyAccessor $targetIdentifierAccessor,
         array $uninitializedSourceEntityIdsChunk,
         array $uninitializedCollections,
         int $maxFetchJoinSameFieldCount,
@@ -356,7 +356,7 @@ class EntityPreloader
         }
 
         foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $sourceClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
-            $targetEntityKey = (string) $targetIdentifierReflection->getValue($targetEntity);
+            $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
             $targetEntities[$targetEntityKey] = $targetEntity;
         }
 
@@ -389,9 +389,9 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        $sourcePropertyReflection = $sourceClassMetadata->getReflectionProperty($sourcePropertyName); // e.g. Item::$order reflection
+        $sourcePropertyAccessor = $sourceClassMetadata->getPropertyAccessor($sourcePropertyName); // e.g. Item::$order reflection
 
-        if ($sourcePropertyReflection === null) {
+        if ($sourcePropertyAccessor === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
         }
 
@@ -399,7 +399,7 @@ class EntityPreloader
         $targetEntities = [];
 
         foreach ($sourceEntities as $sourceEntity) {
-            $targetEntity = $sourcePropertyReflection->getValue($sourceEntity);
+            $targetEntity = $sourcePropertyAccessor->getValue($sourceEntity);
 
             if ($targetEntity === null) {
                 continue;

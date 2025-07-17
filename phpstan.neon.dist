@@ -33,6 +33,9 @@ parameters:
             reportUnmatched: false
             path: 'src/EntityPreloader.php'
         -
+            message: '#internal interface Doctrine\\ORM\\Mapping\\PropertyAccessors\\PropertyAccessor#' # internal, although returned from public ClassMetadata::getPropertyAccessor
+            path: 'src/EntityPreloader.php'
+        -
             identifier: shipmonk.defaultMatchArmWithEnum
             reportUnmatched: false # only new dbal issue
             path: 'src/EntityPreloader.php'

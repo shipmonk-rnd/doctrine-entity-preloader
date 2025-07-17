@@ -7,6 +7,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ReadableCollection;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
+use Doctrine\ORM\Mapping\InverseJoinColumn;
+use Doctrine\ORM\Mapping\JoinColumn;
 use Doctrine\ORM\Mapping\ManyToMany;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
@@ -29,6 +31,8 @@ class Article extends TestEntityWithCustomPrimaryKey
      * @var Collection<int, Tag>
      */
     #[ManyToMany(targetEntity: Tag::class, inversedBy: 'articles')]
+    #[JoinColumn(nullable: false)]
+    #[InverseJoinColumn(nullable: false)]
     private Collection $tags;
 
     /**
