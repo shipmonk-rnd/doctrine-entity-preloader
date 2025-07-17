@@ -34,6 +34,17 @@ parameters:
             path: 'src/EntityPreloader.php'
         -
             message: '#internal interface Doctrine\\ORM\\Mapping\\PropertyAccessors\\PropertyAccessor#' # internal, although returned from public ClassMetadata::getPropertyAccessor
+            reportUnmatched: false # only new Doctrine
+            path: 'src/EntityPreloader.php'
+        -
+            message: '#Doctrine\\ORM\\Mapping\\PropertyAccessors\\PropertyAccessor#'
+            reportUnmatched: false # only old Doctrine
+            identifier: class.notFound
+            path: 'src/EntityPreloader.php'
+        -
+            message: '#Call to function method_exists#'
+            reportUnmatched: false # only new Doctrine
+            identifier: function.alreadyNarrowedType
             path: 'src/EntityPreloader.php'
         -
             identifier: shipmonk.defaultMatchArmWithEnum

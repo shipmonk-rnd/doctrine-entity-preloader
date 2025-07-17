@@ -12,11 +12,13 @@ use Doctrine\ORM\Mapping\PropertyAccessors\PropertyAccessor;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\QueryBuilder;
 use LogicException;
+use ReflectionProperty;
 use function array_chunk;
 use function array_values;
 use function count;
 use function get_parent_class;
 use function is_a;
+use function method_exists;
 
 /**
  * @template E of object
@@ -123,7 +125,7 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        $identifierAccessor = $classMetadata->getSingleIdPropertyAccessor(); // e.g. Order::$id reflection
+        $identifierAccessor = $this->getSingleIdPropertyAccessor($classMetadata); // e.g. Order::$id reflection
         $identifierName = $classMetadata->getSingleIdentifierFieldName(); // e.g. 'id'
 
         if ($identifierAccessor === null) {
@@ -170,9 +172,9 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        $sourceIdentifierAccessor = $sourceClassMetadata->getSingleIdPropertyAccessor(); // e.g. Order::$id reflection
-        $sourcePropertyAccessor = $sourceClassMetadata->getPropertyAccessor($sourcePropertyName); // e.g. Order::$items reflection
-        $targetIdentifierAccessor = $targetClassMetadata->getSingleIdPropertyAccessor();
+        $sourceIdentifierAccessor = $this->getSingleIdPropertyAccessor($sourceClassMetadata); // e.g. Order::$id reflection
+        $sourcePropertyAccessor = $this->getPropertyAccessor($sourceClassMetadata, $sourcePropertyName); // e.g. Order::$items reflection
+        $targetIdentifierAccessor = $this->getSingleIdPropertyAccessor($targetClassMetadata);
 
         if ($sourceIdentifierAccessor === null || $sourcePropertyAccessor === null || $targetIdentifierAccessor === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
@@ -253,17 +255,17 @@ class EntityPreloader
     private function preloadOneToManyInner(
         array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
-        PropertyAccessor $sourceIdentifierAccessor,
+        PropertyAccessor|ReflectionProperty $sourceIdentifierAccessor,
         string $sourcePropertyName,
         ClassMetadata $targetClassMetadata,
-        PropertyAccessor $targetIdentifierAccessor,
+        PropertyAccessor|ReflectionProperty $targetIdentifierAccessor,
         array $uninitializedSourceEntityIdsChunk,
         array $uninitializedCollections,
         int $maxFetchJoinSameFieldCount,
     ): array
     {
         $targetPropertyName = $sourceClassMetadata->getAssociationMappedByTargetField($sourcePropertyName); // e.g. 'order'
-        $targetPropertyAccessor = $targetClassMetadata->getPropertyAccessor($targetPropertyName); // e.g. Item::$order reflection
+        $targetPropertyAccessor = $this->getPropertyAccessor($targetClassMetadata, $targetPropertyName); // e.g. Item::$order reflection
         $targetEntities = [];
 
         if ($targetPropertyAccessor === null) {
@@ -306,10 +308,10 @@ class EntityPreloader
     private function preloadManyToManyInner(
         array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
-        PropertyAccessor $sourceIdentifierAccessor,
+        PropertyAccessor|ReflectionProperty $sourceIdentifierAccessor,
         string $sourcePropertyName,
         ClassMetadata $targetClassMetadata,
-        PropertyAccessor $targetIdentifierAccessor,
+        PropertyAccessor|ReflectionProperty $targetIdentifierAccessor,
         array $uninitializedSourceEntityIdsChunk,
         array $uninitializedCollections,
         int $maxFetchJoinSameFieldCount,
@@ -389,7 +391,7 @@ class EntityPreloader
         int $maxFetchJoinSameFieldCount,
     ): array
     {
-        $sourcePropertyAccessor = $sourceClassMetadata->getPropertyAccessor($sourcePropertyName); // e.g. Item::$order reflection
+        $sourcePropertyAccessor = $this->getPropertyAccessor($sourceClassMetadata, $sourcePropertyName); // e.g. Item::$order reflection
 
         if ($sourcePropertyAccessor === null) {
             throw new LogicException('Doctrine should use RuntimeReflectionService which never returns null.');
@@ -547,6 +549,33 @@ class EntityPreloader
 
             $this->addFetchJoinsToPreventFetchDuringHydration($targetRelationAlias, $queryBuilder, $targetClassMetadata, $maxFetchJoinSameFieldCount, $alreadyPreloadedJoins);
         }
+    }
+
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function getSingleIdPropertyAccessor(ClassMetadata $classMetadata): PropertyAccessor|ReflectionProperty|null
+    {
+        if (method_exists($classMetadata, 'getSingleIdPropertyAccessor')) {
+            return $classMetadata->getSingleIdPropertyAccessor();
+        }
+
+        return $classMetadata->getSingleIdReflectionProperty();
+    }
+
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function getPropertyAccessor(
+        ClassMetadata $classMetadata,
+        string $property,
+    ): PropertyAccessor|ReflectionProperty|null
+    {
+        if (method_exists($classMetadata, 'getPropertyAccessor')) {
+            return $classMetadata->getPropertyAccessor($property);
+        }
+
+        return $classMetadata->getReflectionProperty($property);
     }
 
 }
