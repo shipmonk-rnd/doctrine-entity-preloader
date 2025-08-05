@@ -3,6 +3,7 @@
 namespace ShipMonkTests\DoctrineEntityPreloader\Lib;
 
 use Composer\InstalledVersions;
+use Composer\Semver\VersionParser;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
 use Doctrine\DBAL\Types\Type as DbalType;
@@ -259,6 +260,13 @@ abstract class TestCase extends PhpUnitTestCase
     private function createEntityPreloader(EntityManagerInterface $entityManager): EntityPreloader
     {
         return new EntityPreloader($entityManager);
+    }
+
+    protected function skipIfDoctrineOrmHasBrokenUnhandledMatchCase(): void
+    {
+        if (!InstalledVersions::satisfies(new VersionParser(), 'doctrine/orm', '^3.5.1')) {
+            self::markTestSkipped('Unable to run test due to https://github.com/doctrine/orm/pull/12062');
+        }
     }
 
 }

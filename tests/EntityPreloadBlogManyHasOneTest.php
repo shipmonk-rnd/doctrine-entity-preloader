@@ -77,6 +77,7 @@ class EntityPreloadBlogManyHasOneTest extends TestCase
 
     public function testManyHasOneWithEagerFetchMode(): void
     {
+        $this->skipIfDoctrineOrmHasBrokenUnhandledMatchCase();
         $this->createDummyBlogData(categoryCount: 5, articleInEachCategoryCount: 5);
 
         $articles = $this->getEntityManager()->createQueryBuilder()
