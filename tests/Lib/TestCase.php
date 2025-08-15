@@ -263,11 +263,10 @@ abstract class TestCase extends PhpUnitTestCase
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite'] + $driverOptions, $config);
         $entityManager = new EntityManager($connection, $config);
 
-        $typeRegistry = DbalType::getTypeRegistry();
-        if ($typeRegistry->has(PrimaryKey::DOCTRINE_TYPE_NAME)) {
-            $typeRegistry->override(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
+        if (DbalType::hasType(PrimaryKey::DOCTRINE_TYPE_NAME)) {
+            DbalType::overrideType(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
         } else {
-            $typeRegistry->register(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
+            DbalType::addType(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
         }
 
         $schemaTool = new SchemaTool($entityManager);
