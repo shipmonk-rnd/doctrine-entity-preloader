@@ -8,6 +8,8 @@ use Doctrine\DBAL\Types\Type;
 use LogicException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\PrimaryKey;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Compat\CompatibilityType;
+use function get_debug_type;
+use function is_string;
 use function pack;
 use function unpack;
 
@@ -25,11 +27,11 @@ final class PrimaryKeyBinaryType extends Type
             return null;
         }
 
-        if ($value instanceof PrimaryKey) {
-            return $value;
+        if (is_string($value)) {
+            return new PrimaryKey(unpack('N', $value)[1]); // @phpstan-ignore offsetAccess.nonOffsetAccessible
         }
 
-        return new PrimaryKey(unpack('N', $value)[1]); // @phpstan-ignore offsetAccess.nonOffsetAccessible
+        throw new LogicException('Unexpected value: ' . get_debug_type($value));
     }
 
     public function convertToDatabaseValue(

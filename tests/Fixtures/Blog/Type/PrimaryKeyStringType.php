@@ -8,6 +8,8 @@ use Doctrine\DBAL\Types\Type;
 use LogicException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\PrimaryKey;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Compat\CompatibilityType;
+use function get_debug_type;
+use function is_string;
 
 final class PrimaryKeyStringType extends Type
 {
@@ -23,11 +25,11 @@ final class PrimaryKeyStringType extends Type
             return null;
         }
 
-        if ($value instanceof PrimaryKey) {
-            return $value;
+        if (is_string($value)) {
+            return new PrimaryKey((int) $value);
         }
 
-        return new PrimaryKey((int) $value);
+        throw new LogicException('Unexpected value: ' . get_debug_type($value));
     }
 
     public function convertToDatabaseValue(
