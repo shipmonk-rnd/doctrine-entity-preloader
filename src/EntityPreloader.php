@@ -331,7 +331,7 @@ class EntityPreloader
             ->andWhere('source IN (:sourceEntityIds)')
             ->setParameter(
                 'sourceEntityIds',
-                $uninitializedSourceEntityIdsChunk,
+                $this->convertFieldValuesToDatabaseValues($sourceIdentifierType, $uninitializedSourceEntityIdsChunk),
                 $this->deduceArrayParameterType($sourceIdentifierType),
             )
             ->getQuery()
@@ -444,7 +444,7 @@ class EntityPreloader
             ->andWhere("{$rootLevelAlias}.{$fieldName} IN (:fieldValues)")
             ->setParameter(
                 'fieldValues',
-                $fieldValues,
+                $this->convertFieldValuesToDatabaseValues($referencedType, $fieldValues),
                 $this->deduceArrayParameterType($referencedType),
             );
 
@@ -466,6 +466,26 @@ class EntityPreloader
             ParameterType::BINARY => ArrayParameterType::BINARY,
             default => null,
         };
+    }
+
+    /**
+     * @param array<mixed> $fieldValues
+     * @return list<mixed>
+     */
+    private function convertFieldValuesToDatabaseValues(
+        Type $dbalType,
+        array $fieldValues,
+    ): array
+    {
+        $connection = $this->entityManager->getConnection();
+        $platform = $connection->getDatabasePlatform();
+
+        $convertedValues = [];
+        foreach ($fieldValues as $value) {
+            $convertedValues[] = $dbalType->convertToDatabaseValue($value, $platform);
+        }
+
+        return $convertedValues;
     }
 
     /**
