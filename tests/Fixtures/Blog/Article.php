@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\OrderBy;
 
 #[Entity]
-class Article extends TestEntityWithBinaryId
+class Article extends TestEntityWithCustomPrimaryKey
 {
 
     #[Column]

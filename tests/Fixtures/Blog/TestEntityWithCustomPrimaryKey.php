@@ -7,19 +7,19 @@ use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\MappedSuperclass;
 
 #[MappedSuperclass]
-abstract class TestEntityWithBinaryId
+abstract class TestEntityWithCustomPrimaryKey
 {
 
     #[Id]
-    #[Column(type: BinaryIdType::NAME, nullable: false)]
-    private BinaryId $id;
+    #[Column(type: PrimaryKey::DOCTRINE_TYPE_NAME, nullable: false)]
+    private PrimaryKey $id;
 
     protected function __construct()
     {
-        $this->id = BinaryId::new();
+        $this->id = PrimaryKey::new();
     }
 
-    public function getId(): BinaryId
+    public function getId(): PrimaryKey
     {
         return $this->id;
     }

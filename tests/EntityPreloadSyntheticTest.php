@@ -2,6 +2,7 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Doctrine\DBAL\Types\IntegerType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonk\DoctrineEntityPreloader\Exception\LogicException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Synthetic\AbstractEntityWithNoRelations;
@@ -32,6 +33,13 @@ use function intdiv;
 
 class EntityPreloadSyntheticTest extends TestCase
 {
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->initializeEntityManager(new IntegerType(), $this->getQueryLogger());
+    }
 
     public function testManyToOne(): void
     {

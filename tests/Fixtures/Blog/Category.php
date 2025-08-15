@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
 
 #[Entity]
-class Category extends TestEntityWithBinaryId
+class Category extends TestEntityWithCustomPrimaryKey
 {
 
     #[Column]

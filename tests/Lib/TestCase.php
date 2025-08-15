@@ -4,8 +4,11 @@ namespace ShipMonkTests\DoctrineEntityPreloader\Lib;
 
 use Composer\InstalledVersions;
 use Composer\Semver\VersionParser;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,11 +22,14 @@ use Psr\Log\LoggerInterface;
 use ShipMonk\DoctrineEntityPreloader\EntityPreloader;
 use ShipMonk\DoctrineEntityPreloader\Exception\LogicException;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
-use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\BinaryIdType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Bot;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Comment;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\PrimaryKey;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Tag;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyBinaryType;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyIntegerType;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyStringType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\User;
 use Throwable;
 use function unlink;
@@ -40,6 +46,16 @@ abstract class TestCase extends PhpUnitTestCase
      * @var EntityPreloader<object>|null
      */
     private ?EntityPreloader $entityPreloader = null;
+
+    /**
+     * @return iterable<array{DbalType}>
+     */
+    public static function providePrimaryKeyTypes(): iterable
+    {
+        yield 'binary' => [new PrimaryKeyBinaryType()];
+        yield 'string' => [new PrimaryKeyStringType()];
+        yield 'integer' => [new PrimaryKeyIntegerType()];
+    }
 
     protected function setUp(): void
     {
@@ -94,6 +110,7 @@ abstract class TestCase extends PhpUnitTestCase
     }
 
     protected function createDummyBlogData(
+        DbalType $dbalType,
         int $categoryCount = 1,
         int $categoryParentsCount = 0,
         int $articleInEachCategoryCount = 1,
@@ -102,6 +119,7 @@ abstract class TestCase extends PhpUnitTestCase
         int $promptChangeCount = 0,
     ): void
     {
+        $this->initializeEntityManager($dbalType, $this->getQueryLogger());
         $entityManager = $this->getEntityManager();
 
         for ($h = 0; $h < $categoryCount; $h++) {
@@ -204,7 +222,10 @@ abstract class TestCase extends PhpUnitTestCase
 
     protected function getEntityManager(): EntityManagerInterface
     {
-        return $this->entityManager ??= $this->createEntityManager($this->getQueryLogger());
+        if ($this->entityManager === null) {
+            throw new LogicException('EntityManager is not initialized. Call createEntityManager() with DbalType before using it.');
+        }
+        return $this->entityManager;
     }
 
     /**
@@ -221,6 +242,7 @@ abstract class TestCase extends PhpUnitTestCase
     }
 
     private function createEntityManager(
+        DbalType $primaryKey,
         LoggerInterface $logger,
         bool $inMemory = true,
     ): EntityManagerInterface
@@ -241,8 +263,11 @@ abstract class TestCase extends PhpUnitTestCase
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite'] + $driverOptions, $config);
         $entityManager = new EntityManager($connection, $config);
 
-        if (!DbalType::hasType(BinaryIdType::NAME)) {
-            DbalType::addType(BinaryIdType::NAME, BinaryIdType::class);
+        $typeRegistry = DbalType::getTypeRegistry();
+        if ($typeRegistry->has(PrimaryKey::DOCTRINE_TYPE_NAME)) {
+            $typeRegistry->override(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
+        } else {
+            $typeRegistry->register(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
         }
 
         $schemaTool = new SchemaTool($entityManager);
@@ -266,6 +291,31 @@ abstract class TestCase extends PhpUnitTestCase
     {
         if (!InstalledVersions::satisfies(new VersionParser(), 'doctrine/orm', '^3.5.1')) {
             self::markTestSkipped('Unable to run test due to https://github.com/doctrine/orm/pull/12062');
+        }
+    }
+
+    protected function initializeEntityManager(
+        DbalType $primaryKey,
+        QueryLogger $queryLogger,
+    ): void
+    {
+        if ($this->entityManager === null) {
+            $this->entityManager = $this->createEntityManager($primaryKey, $queryLogger);
+        }
+    }
+
+    protected function deduceArrayParameterType(Type $dbalType): ArrayParameterType
+    {
+        if ($dbalType->getBindingType() === ParameterType::INTEGER) {
+            return ArrayParameterType::INTEGER;
+        } elseif ($dbalType->getBindingType() === ParameterType::STRING) {
+            return ArrayParameterType::STRING;
+        } elseif ($dbalType->getBindingType() === ParameterType::ASCII) {
+            return ArrayParameterType::ASCII;
+        } elseif ($dbalType->getBindingType() === ParameterType::BINARY) {
+            return ArrayParameterType::BINARY;
+        } else {
+            throw new LogicException('Unexpected binding type.');
         }
     }
 

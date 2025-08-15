@@ -13,7 +13,7 @@ use LogicException;
 
 #[Entity]
 #[InheritanceType('SINGLE_TABLE')]
-abstract class Contributor extends TestEntityWithBinaryId
+abstract class Contributor extends TestEntityWithCustomPrimaryKey
 {
 
     #[Column]

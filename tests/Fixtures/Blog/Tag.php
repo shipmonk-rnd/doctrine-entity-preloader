@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping\Entity;
 use Doctrine\ORM\Mapping\ManyToMany;
 
 #[Entity]
-class Tag extends TestEntityWithBinaryId
+class Tag extends TestEntityWithCustomPrimaryKey
 {
 
     #[Column]

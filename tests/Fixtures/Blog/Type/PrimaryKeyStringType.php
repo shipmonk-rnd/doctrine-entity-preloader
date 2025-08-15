@@ -1,34 +1,33 @@
 <?php declare(strict_types = 1);
 
-namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog;
+namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type;
 
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 use LogicException;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\PrimaryKey;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Compat\CompatibilityType;
 
-final class BinaryIdType extends Type
+final class PrimaryKeyStringType extends Type
 {
 
     use CompatibilityType;
 
-    public const NAME = 'binary_id';
-
     public function convertToPHPValue(
         mixed $value,
         AbstractPlatform $platform,
-    ): ?BinaryId
+    ): ?PrimaryKey
     {
         if ($value === null) {
             return null;
         }
 
-        if ($value instanceof BinaryId) {
+        if ($value instanceof PrimaryKey) {
             return $value;
         }
 
-        return BinaryId::fromBytes($value);
+        return new PrimaryKey((int) $value);
     }
 
     public function convertToDatabaseValue(
@@ -39,8 +38,8 @@ final class BinaryIdType extends Type
         if ($value === null) {
             return null;
 
-        } elseif ($value instanceof BinaryId) {
-            return $value->getBytes();
+        } elseif ($value instanceof PrimaryKey) {
+            return (string) $value->getData();
 
         } else {
             throw new LogicException('Unexpected value: ' . $value);
@@ -52,20 +51,17 @@ final class BinaryIdType extends Type
         AbstractPlatform $platform,
     ): string
     {
-        return $platform->getBinaryTypeDeclarationSQL([
-            'length' => BinaryId::LENGTH,
-            'fixed' => true,
-        ]);
+        return $platform->getStringTypeDeclarationSQL([]);
     }
 
     public function getName(): string
     {
-        return self::NAME;
+        return PrimaryKey::DOCTRINE_TYPE_NAME;
     }
 
     public function doGetBindingType(): ParameterType|int // @phpstan-ignore return.unusedType (old dbal compat)
     {
-        return ParameterType::BINARY;
+        return ParameterType::STRING;
     }
 
 }

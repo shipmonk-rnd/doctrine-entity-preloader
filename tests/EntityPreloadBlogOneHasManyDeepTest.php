@@ -2,8 +2,9 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
-use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
 use function array_map;
@@ -12,9 +13,10 @@ use function array_merge;
 class EntityPreloadBlogOneHasManyDeepTest extends TestCase
 {
 
-    public function testOneHasManyDeepUnoptimized(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyDeepUnoptimized(DbalType $primaryKey): void
     {
-        $this->createCategoryTree(depth: 5, branchingFactor: 5);
+        $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
         $rootCategories = $this->getEntityManager()->createQueryBuilder()
             ->select('category')
@@ -31,10 +33,11 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyDeepWithWithManualPreloadUsingPartial(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyDeepWithWithManualPreloadUsingPartial(DbalType $primaryKey): void
     {
         $this->skipIfPartialEntitiesAreNotSupported();
-        $this->createCategoryTree(depth: 5, branchingFactor: 5);
+        $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
         $rootCategories = $this->getEntityManager()->createQueryBuilder()
             ->select('category')
@@ -43,26 +46,27 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
             ->getQuery()
             ->getResult();
 
-        $rawRootCategoryIds = array_map(static fn (Category $category) => $category->getId()->getBytes(), $rootCategories);
+        $platform = $this->getEntityManager()->getConnection()->getDatabasePlatform();
+        $rawRootCategoryIds = array_map(static fn (Category $category) => $primaryKey->convertToDatabaseValue($category->getId(), $platform), $rootCategories);
 
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL category.{id}', 'subCategory')
             ->from(Category::class, 'category')
             ->leftJoin('category.children', 'subCategory')
             ->where('category IN (:categories)')
-            ->setParameter('categories', $rawRootCategoryIds, ArrayParameterType::BINARY)
+            ->setParameter('categories', $rawRootCategoryIds, $this->deduceArrayParameterType($primaryKey))
             ->getQuery()
             ->getResult();
 
         $subCategories = array_merge(...array_map(static fn (Category $category) => $category->getChildren()->toArray(), $rootCategories));
-        $rawSubCategoryIds = array_map(static fn (Category $category) => $category->getId()->getBytes(), $subCategories);
+        $rawSubCategoryIds = array_map(static fn (Category $category) => $primaryKey->convertToDatabaseValue($category->getId(), $platform), $subCategories);
 
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL subCategory.{id}', 'subSubCategory')
             ->from(Category::class, 'subCategory')
             ->leftJoin('subCategory.children', 'subSubCategory')
             ->where('subCategory IN (:subCategories)')
-            ->setParameter('subCategories', $rawSubCategoryIds, ArrayParameterType::BINARY)
+            ->setParameter('subCategories', $rawSubCategoryIds, $this->deduceArrayParameterType($primaryKey))
             ->getQuery()
             ->getResult();
 
@@ -75,9 +79,10 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyDeepWithFetchJoin(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyDeepWithFetchJoin(DbalType $primaryKey): void
     {
-        $this->createCategoryTree(depth: 5, branchingFactor: 5);
+        $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
         $rootCategories = $this->getEntityManager()->createQueryBuilder()
             ->select('category', 'subCategories', 'subSubCategories')
@@ -95,10 +100,11 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyDeepWithEagerFetchMode(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyDeepWithEagerFetchMode(DbalType $primaryKey): void
     {
         $this->skipIfDoctrineOrmHasBrokenUnhandledMatchCase();
-        $this->createCategoryTree(depth: 5, branchingFactor: 5);
+        $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
         $rootCategories = $this->getEntityManager()->createQueryBuilder()
             ->select('category')
@@ -117,9 +123,10 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyDeepWithPreload(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyDeepWithPreload(DbalType $primaryKey): void
     {
-        $this->createCategoryTree(depth: 5, branchingFactor: 5);
+        $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
         $rootCategories = $this->getEntityManager()->createQueryBuilder()
             ->select('category')
@@ -141,17 +148,20 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
     }
 
     private function createCategoryTree(
+        DbalType $primaryKey,
         int $depth,
         int $branchingFactor,
         ?Category $parent = null,
     ): void
     {
+        $this->initializeEntityManager($primaryKey, $this->getQueryLogger());
+
         for ($i = 0; $i < $branchingFactor; $i++) {
             $category = new Category("Category $depth-$i", $parent);
             $this->getEntityManager()->persist($category);
 
             if ($depth > 1) {
-                $this->createCategoryTree($depth - 1, $branchingFactor, $category);
+                $this->createCategoryTree($primaryKey, $depth - 1, $branchingFactor, $category);
             }
         }
 

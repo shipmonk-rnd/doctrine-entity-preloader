@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping\Entity;
 use Doctrine\ORM\Mapping\OneToOne;
 
 #[Entity]
-class BotPromptVersion extends TestEntityWithBinaryId
+class BotPromptVersion extends TestEntityWithCustomPrimaryKey
 {
 
     #[Column]

@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping\Entity;
 use Doctrine\ORM\Mapping\ManyToOne;
 
 #[Entity]
-class Comment extends TestEntityWithBinaryId
+class Comment extends TestEntityWithCustomPrimaryKey
 {
 
     #[ManyToOne(targetEntity: Article::class, inversedBy: 'comments')]
