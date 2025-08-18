@@ -257,9 +257,9 @@ abstract class TestCase extends PhpUnitTestCase
         $entityManager = new EntityManager($connection, $config);
 
         if (DbalType::hasType(PrimaryKey::DOCTRINE_TYPE_NAME)) {
-            DbalType::overrideType(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
+            DbalType::overrideType(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey::class);
         } else {
-            DbalType::addType(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey);
+            DbalType::addType(PrimaryKey::DOCTRINE_TYPE_NAME, $primaryKey::class);
         }
 
         $schemaTool = new SchemaTool($entityManager);
