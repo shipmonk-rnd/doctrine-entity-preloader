@@ -208,15 +208,6 @@ abstract class TestCase extends PhpUnitTestCase
         return $freshEntity;
     }
 
-    protected function skipIfPartialEntitiesAreNotSupported(): void
-    {
-        $ormVersion = InstalledVersions::getVersion('doctrine/orm') ?? '0.0.0';
-
-        if (version_compare($ormVersion, '3.0.0', '>=') && version_compare($ormVersion, '3.3.0', '<')) {
-            self::markTestSkipped('Partial entities are not supported in Doctrine ORM versions 3.0 to 3.2');
-        }
-    }
-
     protected function getQueryLogger(): QueryLogger
     {
         return $this->queryLogger ??= $this->createQueryLogger();
@@ -299,6 +290,15 @@ abstract class TestCase extends PhpUnitTestCase
     {
         if (!$primaryKey instanceof PrimaryKeyBase64StringType) {
             self::markTestSkipped('Unable to run test due to https://github.com/doctrine/orm/pull/12130');
+        }
+    }
+
+    protected function skipIfPartialEntitiesAreNotSupported(): void
+    {
+        $ormVersion = InstalledVersions::getVersion('doctrine/orm') ?? '0.0.0';
+
+        if (version_compare($ormVersion, '3.0.0', '>=') && version_compare($ormVersion, '3.3.0', '<')) {
+            self::markTestSkipped('Partial entities are not supported in Doctrine ORM versions 3.0 to 3.2');
         }
     }
 
