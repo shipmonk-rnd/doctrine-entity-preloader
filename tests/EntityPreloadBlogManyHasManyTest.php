@@ -2,16 +2,20 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
+use function array_map;
 
 class EntityPreloadBlogManyHasManyTest extends TestCase
 {
 
-    public function testManyHasManyUnoptimized(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyUnoptimized(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
 
@@ -23,19 +27,25 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyWithWithManualPreloadUsingPartial(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyWithWithManualPreloadUsingPartial(DbalType $primaryKey): void
     {
         $this->skipIfPartialEntitiesAreNotSupported();
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+        $platform = $this->getEntityManager()->getConnection()->getDatabasePlatform();
+        $rawArticleIds = array_map(
+            static fn (Article $article) => $primaryKey->convertToDatabaseValue($article->getId(), $platform),
+            $articles,
+        );
 
         $this->getEntityManager()->createQueryBuilder()
             ->select('PARTIAL article.{id}', 'tag')
             ->from(Article::class, 'article')
             ->leftJoin('article.tags', 'tag')
             ->where('article IN (:articles)')
-            ->setParameter('articles', $articles)
+            ->setParameter('articles', $rawArticleIds, $this->deduceArrayParameterType($primaryKey))
             ->getQuery()
             ->getResult();
 
@@ -47,9 +57,10 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         ]);
     }
 
-    public function testManyHasManyWithFetchJoin(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyWithFetchJoin(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->createQueryBuilder()
             ->select('article', 'tag')
@@ -65,9 +76,10 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         ]);
     }
 
-    public function testManyHasManyWithEagerFetchMode(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyWithEagerFetchMode(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         // for eagerly loaded Many-To-Many associations one query has to be made for each collection
         // https://www.doctrine-project.org/projects/doctrine-orm/en/3.2/reference/working-with-objects.html#by-eager-loading
@@ -86,9 +98,10 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         ]);
     }
 
-    public function testManyHasManyWithPreload(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyWithPreload(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
         $this->getEntityPreloader()->preload($articles, 'tags');

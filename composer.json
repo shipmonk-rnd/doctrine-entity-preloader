@@ -6,11 +6,12 @@
     ],
     "require": {
         "php": "^8.1",
+        "doctrine/dbal": "^3.7 || ^4.0",
         "doctrine/orm": "^2.19.7 || ^3.2"
     },
     "require-dev": {
+        "composer/semver": "^3.0",
         "doctrine/collections": "^2.2",
-        "doctrine/dbal": "^3.9 || ^4.0",
         "doctrine/persistence": "^3.3",
         "editorconfig-checker/editorconfig-checker": "^10.6.0",
         "ergebnis/composer-normalize": "^2.42.0",
@@ -60,7 +61,7 @@
         "check:dependencies": "composer-dependency-analyser",
         "check:ec": "ec src tests",
         "check:tests": "phpunit tests",
-        "check:types": "phpstan analyse -vvv",
+        "check:types": "phpstan analyse -vv --ansi",
         "fix:cs": "phpcbf"
     }
 }

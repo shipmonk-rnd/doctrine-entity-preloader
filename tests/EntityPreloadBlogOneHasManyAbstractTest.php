@@ -2,7 +2,9 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Comment;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
@@ -10,9 +12,10 @@ use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
 class EntityPreloadBlogOneHasManyAbstractTest extends TestCase
 {
 
-    public function testOneHasManyAbstractUnoptimized(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyAbstractUnoptimized(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
 
@@ -25,9 +28,10 @@ class EntityPreloadBlogOneHasManyAbstractTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyAbstractWithFetchJoin(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyAbstractWithFetchJoin(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->createQueryBuilder()
             ->select('article', 'comment', 'author')
@@ -44,9 +48,12 @@ class EntityPreloadBlogOneHasManyAbstractTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyAbstractWithEagerFetchMode(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyAbstractWithEagerFetchMode(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
+        $this->skipIfDoctrineOrmHasBrokenUnhandledMatchCase();
+        $this->skipIfDoctrineOrmHasBrokenEagerFetch($primaryKey);
+        $this->createDummyBlogData($primaryKey, categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->createQueryBuilder()
             ->select('article')
@@ -65,9 +72,10 @@ class EntityPreloadBlogOneHasManyAbstractTest extends TestCase
         ]);
     }
 
-    public function testOneHasManyAbstractWithPreload(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyAbstractWithPreload(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, categoryCount: 1, articleInEachCategoryCount: 5, commentForEachArticleCount: 5);
 
         $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
         $this->getEntityPreloader()->preload($articles, 'comments');

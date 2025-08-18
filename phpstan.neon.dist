@@ -10,6 +10,9 @@ parameters:
     paths:
         - src
         - tests
+    excludePaths:
+        analyse:
+            - tests/Fixtures/Compat
     checkMissingCallableSignature: true
     checkUninitializedProperties: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
@@ -30,14 +33,14 @@ parameters:
             reportUnmatched: false
             path: 'src/EntityPreloader.php'
         -
+            identifier: shipmonk.defaultMatchArmWithEnum
+            reportUnmatched: false # only new dbal issue
+            path: 'src/EntityPreloader.php'
+        -
             message: '#Result of \|\| is always false#'
             identifier: 'booleanOr.alwaysFalse'
             reportUnmatched: false
             path: 'src/EntityPreloader.php'
-        -
-            message: '#has an uninitialized property \$id#'
-            identifier: 'property.uninitialized'
-            path: 'tests/Fixtures/Blog'
         -
             identifier: 'property.onlyWritten'
             path: 'tests/Fixtures/Synthetic'

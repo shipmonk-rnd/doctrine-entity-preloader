@@ -2,16 +2,19 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader;
 
+use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Tag;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
 
 class EntityPreloadBlogManyHasManyInversedTest extends TestCase
 {
 
-    public function testManyHasManyInversedUnoptimized(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyInversedUnoptimized(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $tags = $this->getEntityManager()->getRepository(Tag::class)->findAll();
 
@@ -23,9 +26,10 @@ class EntityPreloadBlogManyHasManyInversedTest extends TestCase
         ]);
     }
 
-    public function testManyHasManyInversedWithFetchJoin(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyInversedWithFetchJoin(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $tags = $this->getEntityManager()->createQueryBuilder()
             ->select('tag', 'article')
@@ -41,9 +45,10 @@ class EntityPreloadBlogManyHasManyInversedTest extends TestCase
         ]);
     }
 
-    public function testManyHasManyInversedWithEagerFetchMode(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyInversedWithEagerFetchMode(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         // for eagerly loaded Many-To-Many associations one query has to be made for each collection
         // https://www.doctrine-project.org/projects/doctrine-orm/en/3.2/reference/working-with-objects.html#by-eager-loading
@@ -62,9 +67,10 @@ class EntityPreloadBlogManyHasManyInversedTest extends TestCase
         ]);
     }
 
-    public function testManyHasManyInversedWithPreload(): void
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyInversedWithPreload(DbalType $primaryKey): void
     {
-        $this->createDummyBlogData(articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
 
         $tags = $this->getEntityManager()->getRepository(Tag::class)->findAll();
         $this->getEntityPreloader()->preload($tags, 'articles');

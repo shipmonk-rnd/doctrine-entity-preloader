@@ -7,21 +7,14 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ReadableCollection;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\InheritanceType;
 use Doctrine\ORM\Mapping\OneToMany;
 use LogicException;
 
 #[Entity]
 #[InheritanceType('SINGLE_TABLE')]
-abstract class Contributor
+abstract class Contributor extends TestEntityWithCustomPrimaryKey
 {
-
-    #[Id]
-    #[Column]
-    #[GeneratedValue]
-    private int $id;
 
     #[Column]
     private string $name;
@@ -34,13 +27,9 @@ abstract class Contributor
 
     public function __construct(string $name)
     {
+        parent::__construct();
         $this->name = $name;
         $this->comments = new ArrayCollection();
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
     }
 
     public function getName(): string
