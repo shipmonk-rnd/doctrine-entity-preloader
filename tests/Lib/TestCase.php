@@ -303,7 +303,7 @@ abstract class TestCase extends PhpUnitTestCase
         }
     }
 
-    protected function deduceArrayParameterType(Type $dbalType): ArrayParameterType
+    protected function deduceArrayParameterType(Type $dbalType): ArrayParameterType|int
     {
         if ($dbalType->getBindingType() === ParameterType::INTEGER) {
             return ArrayParameterType::INTEGER;
