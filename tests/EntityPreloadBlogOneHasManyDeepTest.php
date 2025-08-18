@@ -104,6 +104,7 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
     public function testOneHasManyDeepWithEagerFetchMode(DbalType $primaryKey): void
     {
         $this->skipIfDoctrineOrmHasBrokenUnhandledMatchCase();
+        $this->skipIfDoctrineOrmHasBrokenEagerFetch($primaryKey);
         $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
         $rootCategories = $this->getEntityManager()->createQueryBuilder()

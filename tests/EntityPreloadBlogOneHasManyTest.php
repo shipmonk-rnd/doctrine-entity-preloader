@@ -105,6 +105,7 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
     public function testOneHasManyWithEagerFetchMode(DbalType $primaryKey): void
     {
         $this->skipIfDoctrineOrmHasBrokenUnhandledMatchCase();
+        $this->skipIfDoctrineOrmHasBrokenEagerFetch($primaryKey); // here the test it green, but emits PHP warning
         $this->createDummyBlogData($primaryKey, categoryCount: 5, articleInEachCategoryCount: 5);
 
         $categories = $this->getEntityManager()->createQueryBuilder()

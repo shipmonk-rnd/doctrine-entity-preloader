@@ -2,7 +2,7 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog;
 
-use function md5;
+use function base64_encode;
 use function random_int;
 
 class PrimaryKey
@@ -33,7 +33,7 @@ class PrimaryKey
 
     public function __toString(): string
     {
-        return md5((string) $this->data); // intentionally not matching any internal PK representation
+        return base64_encode((string) $this->data); // intentionally not matching any internal PK representation
     }
 
 }

@@ -98,6 +98,7 @@ class EntityPreloadBlogManyHasOneDeepTest extends TestCase
     public function testManyHasOneDeepWithEagerFetchMode(DbalType $primaryKey): void
     {
         $this->skipIfDoctrineOrmHasBrokenUnhandledMatchCase();
+        $this->skipIfDoctrineOrmHasBrokenEagerFetch($primaryKey);
         $this->createDummyBlogData($primaryKey, categoryCount: 5, categoryParentsCount: 5, articleInEachCategoryCount: 5);
 
         $articles = $this->getEntityManager()->createQueryBuilder()

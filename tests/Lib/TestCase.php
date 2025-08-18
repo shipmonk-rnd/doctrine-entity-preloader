@@ -27,6 +27,7 @@ use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Comment;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\PrimaryKey;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Tag;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyBase64StringType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyBinaryType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyIntegerType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyStringType;
@@ -55,6 +56,7 @@ abstract class TestCase extends PhpUnitTestCase
         yield 'binary' => [new PrimaryKeyBinaryType()];
         yield 'string' => [new PrimaryKeyStringType()];
         yield 'integer' => [new PrimaryKeyIntegerType()];
+        yield 'base64string' => [new PrimaryKeyBase64StringType()];
     }
 
     protected function setUp(): void
@@ -290,6 +292,13 @@ abstract class TestCase extends PhpUnitTestCase
     {
         if (!InstalledVersions::satisfies(new VersionParser(), 'doctrine/orm', '^3.5.1')) {
             self::markTestSkipped('Unable to run test due to https://github.com/doctrine/orm/pull/12062');
+        }
+    }
+
+    protected function skipIfDoctrineOrmHasBrokenEagerFetch(DbalType $primaryKey): void
+    {
+        if (!$primaryKey instanceof PrimaryKeyBase64StringType) {
+            self::markTestSkipped('Unable to run test due to https://github.com/doctrine/orm/pull/12130');
         }
     }
 
