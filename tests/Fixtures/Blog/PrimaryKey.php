@@ -3,13 +3,13 @@
 namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog;
 
 use function base64_encode;
-use function random_int;
 
 class PrimaryKey
 {
 
     public const DOCTRINE_TYPE_NAME = 'primary_key';
-    public const LENGTH_BYTES = 4;
+
+    private static int $autoIncrement = 0;
 
     private int $data;
 
@@ -20,10 +20,7 @@ class PrimaryKey
 
     public static function new(): self
     {
-        $bits = self::LENGTH_BYTES * 8;
-        $maxValue = (1 << $bits) - 1;
-
-        return new self(random_int(0, $maxValue));
+        return new self(self::$autoIncrement++);
     }
 
     public function getData(): int
