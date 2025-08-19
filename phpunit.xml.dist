@@ -13,15 +13,21 @@
     displayDetailsOnTestsThatTriggerErrors="true"
     displayDetailsOnTestsThatTriggerWarnings="true"
     displayDetailsOnTestsThatTriggerNotices="true"
+    displayDetailsOnTestsThatTriggerDeprecations="true"
     cacheDirectory="cache/phpunit"
 >
+    <php>
+        <ini name="error_reporting" value="-1"/>
+        <env name="DOCTRINE_DEPRECATIONS" value="trigger"/>
+    </php>
+
     <testsuites>
         <testsuite name="default">
             <directory>tests</directory>
         </testsuite>
     </testsuites>
 
-    <source>
+    <source ignoreSuppressionOfDeprecations="true">
         <include>
             <directory>src</directory>
         </include>
