@@ -56,7 +56,7 @@ final class PrimaryKeyBinaryType extends Type
     ): string
     {
         return $platform->getBinaryTypeDeclarationSQL([
-            'length' => PrimaryKey::LENGTH_BYTES,
+            'length' => 4,
             'fixed' => true,
         ]);
     }
