@@ -43,9 +43,6 @@ abstract class TestCase extends PhpUnitTestCase
 
     private ?EntityManagerInterface $entityManager = null;
 
-    /**
-     * @var EntityPreloader<object>|null
-     */
     private ?EntityPreloader $entityPreloader = null;
 
     /**
@@ -221,9 +218,6 @@ abstract class TestCase extends PhpUnitTestCase
         return $this->entityManager;
     }
 
-    /**
-     * @return EntityPreloader<object>
-     */
     protected function getEntityPreloader(): EntityPreloader
     {
         return $this->entityPreloader ??= $this->createEntityPreloader($this->getEntityManager());
@@ -271,9 +265,6 @@ abstract class TestCase extends PhpUnitTestCase
         return $entityManager;
     }
 
-    /**
-     * @return EntityPreloader<object>
-     */
     private function createEntityPreloader(EntityManagerInterface $entityManager): EntityPreloader
     {
         return new EntityPreloader($entityManager);
