@@ -90,7 +90,6 @@ class EntityPreloader
             }
 
             while (!is_a($entityClassName, $commonAncestor, true)) {
-                /** @var class-string|false $commonAncestor */
                 $commonAncestor = get_parent_class($commonAncestor);
 
                 if ($commonAncestor === false) {
