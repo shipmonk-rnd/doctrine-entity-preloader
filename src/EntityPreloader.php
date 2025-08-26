@@ -20,9 +20,6 @@ use function get_parent_class;
 use function is_a;
 use function method_exists;
 
-/**
- * @template E of object
- */
 class EntityPreloader
 {
 
@@ -36,12 +33,10 @@ class EntityPreloader
     }
 
     /**
-     * @param list<S> $sourceEntities
+     * @param list<object> $sourceEntities
      * @param positive-int|null $batchSize
      * @param non-negative-int|null $maxFetchJoinSameFieldCount
-     * @return list<E>
-     *
-     * @template S of E
+     * @return list<object>
      */
     public function preload(
         array $sourceEntities,
@@ -59,7 +54,7 @@ class EntityPreloader
         $sourceClassMetadata = $this->entityManager->getClassMetadata($sourceEntitiesCommonAncestor);
         $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
 
-        /** @var ClassMetadata<E> $targetClassMetadata */
+        /** @var ClassMetadata<object> $targetClassMetadata */
         $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping['targetEntity']);
 
         if (isset($associationMapping['indexBy'])) {
@@ -79,10 +74,8 @@ class EntityPreloader
     }
 
     /**
-     * @param list<S> $entities
-     * @return class-string<S>|null
-     *
-     * @template S of E
+     * @param list<object> $entities
+     * @return class-string<object>|null
      */
     private function getCommonAncestor(array $entities): ?string
     {
@@ -97,7 +90,6 @@ class EntityPreloader
             }
 
             while (!is_a($entityClassName, $commonAncestor, true)) {
-                /** @var class-string<S>|false $commonAncestor */
                 $commonAncestor = get_parent_class($commonAncestor);
 
                 if ($commonAncestor === false) {
@@ -110,13 +102,11 @@ class EntityPreloader
     }
 
     /**
-     * @param ClassMetadata<T> $classMetadata
-     * @param list<T> $entities
+     * @param ClassMetadata<object> $classMetadata
+     * @param list<object> $entities
      * @param positive-int $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
-     * @return list<T>
-     *
-     * @template T of E
+     * @return list<object>
      */
     private function loadProxies(
         ClassMetadata $classMetadata,
@@ -153,15 +143,12 @@ class EntityPreloader
     }
 
     /**
-     * @param list<S> $sourceEntities
-     * @param ClassMetadata<S> $sourceClassMetadata
-     * @param ClassMetadata<T> $targetClassMetadata
+     * @param list<object> $sourceEntities
+     * @param ClassMetadata<object> $sourceClassMetadata
+     * @param ClassMetadata<object> $targetClassMetadata
      * @param positive-int|null $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
-     * @return list<T>
-     *
-     * @template S of E
-     * @template T of E
+     * @return list<object>
      */
     private function preloadToMany(
         array $sourceEntities,
@@ -242,15 +229,12 @@ class EntityPreloader
 
     /**
      * @param array<string, mixed>|ArrayAccess<string, mixed> $associationMapping
-     * @param ClassMetadata<S> $sourceClassMetadata
-     * @param ClassMetadata<T> $targetClassMetadata
+     * @param ClassMetadata<object> $sourceClassMetadata
+     * @param ClassMetadata<object> $targetClassMetadata
      * @param list<mixed> $uninitializedSourceEntityIdsChunk
-     * @param array<string, PersistentCollection<int, T>> $uninitializedCollections
+     * @param array<string, PersistentCollection<int, object>> $uninitializedCollections
      * @param non-negative-int $maxFetchJoinSameFieldCount
-     * @return array<string, T>
-     *
-     * @template S of E
-     * @template T of E
+     * @return array<string, object>
      */
     private function preloadOneToManyInner(
         array|ArrayAccess $associationMapping,
@@ -295,15 +279,12 @@ class EntityPreloader
 
     /**
      * @param array<string, mixed>|ArrayAccess<string, mixed> $associationMapping
-     * @param ClassMetadata<S> $sourceClassMetadata
-     * @param ClassMetadata<T> $targetClassMetadata
+     * @param ClassMetadata<object> $sourceClassMetadata
+     * @param ClassMetadata<object> $targetClassMetadata
      * @param list<mixed> $uninitializedSourceEntityIdsChunk
-     * @param array<string, PersistentCollection<int, T>> $uninitializedCollections
+     * @param array<string, PersistentCollection<int, object>> $uninitializedCollections
      * @param non-negative-int $maxFetchJoinSameFieldCount
-     * @return array<string, T>
-     *
-     * @template S of E
-     * @template T of E
+     * @return array<string, object>
      */
     private function preloadManyToManyInner(
         array|ArrayAccess $associationMapping,
@@ -346,7 +327,7 @@ class EntityPreloader
             $targetEntityId = $manyToManyRow['targetId'];
             $targetEntityKey = (string) $targetEntityId;
 
-            /** @var T|false $targetEntity */
+            /** @var object|false $targetEntity */
             $targetEntity = $this->entityManager->getUnitOfWork()->tryGetById($targetEntityId, $targetClassMetadata->getName());
 
             if ($targetEntity !== false && !$this->entityManager->isUninitializedObject($targetEntity)) {
@@ -372,15 +353,12 @@ class EntityPreloader
     }
 
     /**
-     * @param list<S> $sourceEntities
-     * @param ClassMetadata<S> $sourceClassMetadata
-     * @param ClassMetadata<T> $targetClassMetadata
+     * @param list<object> $sourceEntities
+     * @param ClassMetadata<object> $sourceClassMetadata
+     * @param ClassMetadata<object> $targetClassMetadata
      * @param positive-int|null $batchSize
      * @param non-negative-int $maxFetchJoinSameFieldCount
-     * @return list<T>
-     *
-     * @template S of E
-     * @template T of E
+     * @return list<object>
      */
     private function preloadToOne(
         array $sourceEntities,
@@ -414,15 +392,12 @@ class EntityPreloader
     }
 
     /**
-     * @param ClassMetadata<T> $targetClassMetadata
+     * @param ClassMetadata<object> $targetClassMetadata
      * @param list<mixed> $fieldValues
-     * @param ClassMetadata<R> $referencedClassMetadata
+     * @param ClassMetadata<object> $referencedClassMetadata
      * @param non-negative-int $maxFetchJoinSameFieldCount
      * @param array<string, 'asc'|'desc'> $orderBy
-     * @return list<T>
-     *
-     * @template T of E
-     * @template R of E
+     * @return list<object>
      */
     private function loadEntitiesBy(
         ClassMetadata $targetClassMetadata,
@@ -491,9 +466,7 @@ class EntityPreloader
     }
 
     /**
-     * @param ClassMetadata<C> $classMetadata
-     *
-     * @template C of E
+     * @param ClassMetadata<object> $classMetadata
      */
     private function getIdentifierFieldType(ClassMetadata $classMetadata): Type
     {
@@ -508,10 +481,8 @@ class EntityPreloader
     }
 
     /**
-     * @param ClassMetadata<S> $sourceClassMetadata
+     * @param ClassMetadata<object> $sourceClassMetadata
      * @param array<string, array<string, int>> $alreadyPreloadedJoins
-     *
-     * @template S of E
      */
     private function addFetchJoinsToPreventFetchDuringHydration(
         string $alias,
@@ -530,7 +501,7 @@ class EntityPreloader
                 continue;
             }
 
-            /** @var ClassMetadata<E> $targetClassMetadata */
+            /** @var ClassMetadata<object> $targetClassMetadata */
             $targetClassMetadata = $this->entityManager->getClassMetadata($associationMapping['targetEntity']);
 
             $isToOne = ($associationMapping['type'] & ClassMetadata::TO_ONE) !== 0;
