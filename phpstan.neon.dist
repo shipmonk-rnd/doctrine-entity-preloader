@@ -68,3 +68,14 @@ parameters:
             identifier: 'property.unusedType'
             reportUnmatched: false
             path: 'tests/Fixtures/Synthetic'
+        -
+            identifier: 'shipmonk.publicPropertyNotReadonly'
+            path: 'tests/Fixtures/Synthetic'
+        -
+            identifier: 'booleanAnd.leftAlwaysFalse'
+            reportUnmatched: false
+            path: 'tests/Lib/TestCase.php'
+        -
+            identifier: 'booleanAnd.alwaysFalse'
+            reportUnmatched: false
+            path: 'tests/Lib/TestCase.php'

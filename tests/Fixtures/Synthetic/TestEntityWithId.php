@@ -2,6 +2,7 @@
 
 namespace ShipMonkTests\DoctrineEntityPreloader\Fixtures\Synthetic;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\GeneratedValue;
 use Doctrine\ORM\Mapping\Id;
@@ -15,6 +16,9 @@ abstract class TestEntityWithId
     #[Column]
     #[GeneratedValue]
     protected int $id;
+
+    #[Column(type: Types::INTEGER, nullable: true)]
+    public ?int $number;
 
     /**
      * For performance reasons we can't explicitly throw LogicException when id is null:
