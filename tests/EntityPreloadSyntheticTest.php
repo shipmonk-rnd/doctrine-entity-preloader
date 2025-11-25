@@ -54,7 +54,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.entity_with_no_relations_id AS entity_with_no_relations_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.entity_with_no_relations_id AS entity_with_no_relations_id_3',
                 'FROM entity_with_many_to_one_entity_with_no_relations t0',
                 'WHERE t0.id = ?',
             ]),
@@ -65,7 +65,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT e0_.id AS id_0',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1',
                 'FROM entity_with_no_relations e0_',
                 'WHERE e0_.id IN (?)',
             ]),
@@ -85,12 +85,12 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.abstract_entity_with_no_relations_id AS abstract_entity_with_no_relations_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.abstract_entity_with_no_relations_id AS abstract_entity_with_no_relations_id_3',
                 'FROM entity_with_many_to_one_abstract_entity_with_no_relations t0',
                 'WHERE t0.id = ?',
             ]),
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.dtype',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.dtype',
                 'FROM abstract_entity_with_no_relations t0',
                 "WHERE t0.id = ? AND t0.dtype IN ('a', 'b')",
             ]),
@@ -117,7 +117,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.entity_with_many_to_one_abstract_entity_with_no_relations_id AS entity_with_many_to_one_abstract_entity_with_no_relations_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.entity_with_many_to_one_abstract_entity_with_no_relations_id AS entity_with_many_to_one_abstract_entity_with_no_relations_id_3',
                 'FROM entity_with_many_to_one_of_many_to_one_abstract_entities t0',
                 'WHERE t0.id = ?',
             ]),
@@ -128,7 +128,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT e0_.id AS id_0, a1_.id AS id_1, e0_.abstract_entity_with_no_relations_id AS abstract_entity_with_no_relations_id_2, a1_.dtype AS dtype_3',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, a1_.id AS id_2, a1_.number AS number_3, e0_.abstract_entity_with_no_relations_id AS abstract_entity_with_no_relations_id_4, a1_.dtype AS dtype_5',
                 'FROM entity_with_many_to_one_abstract_entity_with_no_relations e0_',
                 "LEFT JOIN abstract_entity_with_no_relations a1_ ON e0_.abstract_entity_with_no_relations_id = a1_.id AND a1_.dtype IN ('a', 'b')",
                 'WHERE e0_.id IN (?)',
@@ -159,14 +159,14 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $expectedQueries = [
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_3',
                 'FROM entity_with_many_to_one_of_many_to_one_itself_sti_relation t0',
                 'WHERE t0.id = ?',
             ]),
         ];
 
         $concreteEntityWithRelationToItselfQuery = implode(' ', [
-            'SELECT t0.id AS id_1, t0.parent_id AS parent_id_2, t0.dtype',
+            'SELECT t0.id AS id_1, t0.number AS number_2, t0.parent_id AS parent_id_3, t0.dtype',
             'FROM abstract_sti_entity_with_optional_many_to_one_itself_relation t0',
             "WHERE t0.id = ? AND t0.dtype IN ('a')",
         ]);
@@ -237,7 +237,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.entity_with_many_to_one_of_many_to_one_itself_relation_id AS entity_with_many_to_one_of_many_to_one_itself_relation_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.entity_with_many_to_one_of_many_to_one_itself_relation_id AS entity_with_many_to_one_of_many_to_one_itself_relation_id_3',
                 'FROM entity_with_n_to_1_of_n_to_1_itself_relation t0',
                 'WHERE t0.id = ?',
             ]),
@@ -250,14 +250,14 @@ class EntityPreloadSyntheticTest extends TestCase
 
         if ($maxFetchJoinSameFieldCount === 0) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_1',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_2',
                 'FROM entity_with_many_to_one_of_many_to_one_itself_sti_relation e0_',
                 'WHERE e0_.id IN (?)',
             ]);
 
         } elseif ($maxFetchJoinSameFieldCount === 1) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, a1_.id AS id_1, a2_.id AS id_2, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_3, a1_.dtype AS dtype_4, a1_.parent_id AS parent_id_5, a2_.dtype AS dtype_6, a2_.parent_id AS parent_id_7',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, a1_.id AS id_2, a1_.number AS number_3, a2_.id AS id_4, a2_.number AS number_5, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_6, a1_.dtype AS dtype_7, a1_.parent_id AS parent_id_8, a2_.dtype AS dtype_9, a2_.parent_id AS parent_id_10',
                 'FROM entity_with_many_to_one_of_many_to_one_itself_sti_relation e0_',
                 "LEFT JOIN abstract_sti_entity_with_optional_many_to_one_itself_relation a1_ ON e0_.abstract_entity_with_optional_many_to_one_itself_relation_id = a1_.id AND a1_.dtype IN ('a')",
                 "LEFT JOIN abstract_sti_entity_with_optional_many_to_one_itself_relation a2_ ON a1_.parent_id = a2_.id AND a2_.dtype IN ('a')",
@@ -266,7 +266,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         } elseif ($maxFetchJoinSameFieldCount === 2) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, a1_.id AS id_1, a2_.id AS id_2, a3_.id AS id_3, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_4, a1_.dtype AS dtype_5, a1_.parent_id AS parent_id_6, a2_.dtype AS dtype_7, a2_.parent_id AS parent_id_8, a3_.dtype AS dtype_9, a3_.parent_id AS parent_id_10',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, a1_.id AS id_2, a1_.number AS number_3, a2_.id AS id_4, a2_.number AS number_5, a3_.id AS id_6, a3_.number AS number_7, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_8, a1_.dtype AS dtype_9, a1_.parent_id AS parent_id_10, a2_.dtype AS dtype_11, a2_.parent_id AS parent_id_12, a3_.dtype AS dtype_13, a3_.parent_id AS parent_id_14',
                 'FROM entity_with_many_to_one_of_many_to_one_itself_sti_relation e0_',
                 "LEFT JOIN abstract_sti_entity_with_optional_many_to_one_itself_relation a1_ ON e0_.abstract_entity_with_optional_many_to_one_itself_relation_id = a1_.id AND a1_.dtype IN ('a')",
                 "LEFT JOIN abstract_sti_entity_with_optional_many_to_one_itself_relation a2_ ON a1_.parent_id = a2_.id AND a2_.dtype IN ('a')",
@@ -276,7 +276,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         } elseif ($maxFetchJoinSameFieldCount === 3) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, a1_.id AS id_1, a2_.id AS id_2, a3_.id AS id_3, a4_.id AS id_4, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_5, a1_.dtype AS dtype_6, a1_.parent_id AS parent_id_7, a2_.dtype AS dtype_8, a2_.parent_id AS parent_id_9, a3_.dtype AS dtype_10, a3_.parent_id AS parent_id_11, a4_.dtype AS dtype_12, a4_.parent_id AS parent_id_13',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, a1_.id AS id_2, a1_.number AS number_3, a2_.id AS id_4, a2_.number AS number_5, a3_.id AS id_6, a3_.number AS number_7, a4_.id AS id_8, a4_.number AS number_9, e0_.abstract_entity_with_optional_many_to_one_itself_relation_id AS abstract_entity_with_optional_many_to_one_itself_relation_id_10, a1_.dtype AS dtype_11, a1_.parent_id AS parent_id_12, a2_.dtype AS dtype_13, a2_.parent_id AS parent_id_14, a3_.dtype AS dtype_15, a3_.parent_id AS parent_id_16, a4_.dtype AS dtype_17, a4_.parent_id AS parent_id_18',
                 'FROM entity_with_many_to_one_of_many_to_one_itself_sti_relation e0_',
                 "LEFT JOIN abstract_sti_entity_with_optional_many_to_one_itself_relation a1_ ON e0_.abstract_entity_with_optional_many_to_one_itself_relation_id = a1_.id AND a1_.dtype IN ('a')",
                 "LEFT JOIN abstract_sti_entity_with_optional_many_to_one_itself_relation a2_ ON a1_.parent_id = a2_.id AND a2_.dtype IN ('a')",
@@ -290,7 +290,7 @@ class EntityPreloadSyntheticTest extends TestCase
         }
 
         $concreteEntityWithRelationToItselfQuery = implode(' ', [
-            'SELECT t0.id AS id_1, t0.parent_id AS parent_id_2, t0.dtype',
+            'SELECT t0.id AS id_1, t0.number AS number_2, t0.parent_id AS parent_id_3, t0.dtype',
             'FROM abstract_sti_entity_with_optional_many_to_one_itself_relation t0',
             "WHERE t0.id = ? AND t0.dtype IN ('a')",
         ]);
@@ -398,7 +398,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_unidirectional t0',
                 'WHERE t0.id = ?',
             ]),
@@ -409,7 +409,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT e0_.id AS id_0',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1',
                 'FROM entity_with_1_to_1_unidirectional_target e0_',
                 'WHERE e0_.id IN (?)',
             ]),
@@ -432,12 +432,12 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1',
+                'SELECT t0.id AS id_1, t0.number AS number_2',
                 'FROM entity_with_1_to_1_unidirectional_target t0',
                 'WHERE t0.id = ?',
             ]),
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_unidirectional t0',
                 'WHERE t0.id = ?',
             ]),
@@ -464,12 +464,12 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_unidirectional_abstract t0',
                 'WHERE t0.id = ?',
             ]),
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.dtype',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.dtype',
                 'FROM entity_with_1_to_1_unidirectional_abstract_target t0',
                 "WHERE t0.id = ? AND t0.dtype IN ('a', 'b')",
             ]),
@@ -498,7 +498,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_unidirectional_abstract_pointer t0',
                 'WHERE t0.id = ?',
             ]),
@@ -509,7 +509,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT e0_.id AS id_0, e1_.id AS id_1, e0_.target_id AS target_id_2, e1_.dtype AS dtype_3',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e0_.target_id AS target_id_4, e1_.dtype AS dtype_5',
                 'FROM entity_with_1_to_1_unidirectional_abstract e0_',
                 "LEFT JOIN entity_with_1_to_1_unidirectional_abstract_target e1_ ON e0_.target_id = e1_.id AND e1_.dtype IN ('a', 'b')",
                 'WHERE e0_.id IN (?)',
@@ -532,7 +532,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_bidirectional t0',
                 'WHERE t0.id = ?',
             ]),
@@ -543,7 +543,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT e0_.id AS id_0, e1_.id AS id_1, e1_.target_id AS target_id_2',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e1_.target_id AS target_id_4',
                 'FROM entity_with_1_to_1_bidirectional_inverse e0_',
                 'LEFT JOIN entity_with_1_to_1_bidirectional e1_ ON e0_.id = e1_.target_id',
                 'WHERE e0_.id IN (?)',
@@ -566,9 +566,9 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t2.id AS id_3, t2.target_id AS target_id_4',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t3.id AS id_4, t3.number AS number_5, t3.target_id AS target_id_6',
                 'FROM entity_with_1_to_1_bidirectional_inverse t0',
-                'LEFT JOIN entity_with_1_to_1_bidirectional t2 ON t2.target_id = t0.id',
+                'LEFT JOIN entity_with_1_to_1_bidirectional t3 ON t3.target_id = t0.id',
                 'WHERE t0.id = ?',
             ]),
         ]);
@@ -594,7 +594,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_bidirectional_nullable t0',
                 'WHERE t0.id = ?',
             ]),
@@ -605,7 +605,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT e0_.id AS id_0, e1_.id AS id_1, e1_.target_id AS target_id_2',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e1_.target_id AS target_id_4',
                 'FROM entity_with_1_to_1_bidirectional_nullable_inverse e0_',
                 'LEFT JOIN entity_with_1_to_1_bidirectional_nullable e1_ ON e0_.id = e1_.target_id',
                 'WHERE e0_.id IN (?)',
@@ -626,7 +626,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.target_id AS target_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.target_id AS target_id_3',
                 'FROM entity_with_1_to_1_bidirectional_nullable t0',
                 'WHERE t0.id = ?',
             ]),
@@ -657,7 +657,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.self_id AS self_id_2',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.self_id AS self_id_3',
                 'FROM entity_with_1_to_1_self_referencing t0',
                 'WHERE t0.id = ?',
             ]),
@@ -672,7 +672,7 @@ class EntityPreloadSyntheticTest extends TestCase
         } else {
             $this->thenExpectedQueriesArePerformed([
                 implode(' ', [
-                    'SELECT e0_.id AS id_0, e0_.self_id AS self_id_1',
+                    'SELECT e0_.id AS id_0, e0_.number AS number_1, e0_.self_id AS self_id_2',
                     'FROM entity_with_1_to_1_self_referencing e0_',
                     'WHERE e0_.id IN (?)',
                 ]),
@@ -709,9 +709,9 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.self_id AS self_id_2, t3.id AS id_4, t3.self_id AS self_id_5',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.self_id AS self_id_3, t4.id AS id_5, t4.number AS number_6, t4.self_id AS self_id_7',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional t0',
-                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t3 ON t3.self_id = t0.id',
+                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t4 ON t4.self_id = t0.id',
                 'WHERE t0.id = ?',
             ]),
         ]);
@@ -725,7 +725,7 @@ class EntityPreloadSyntheticTest extends TestCase
         } else {
             $this->thenExpectedQueriesArePerformed([
                 implode(' ', [
-                    'SELECT e0_.id AS id_0, e1_.id AS id_1, e0_.self_id AS self_id_2, e1_.self_id AS self_id_3',
+                    'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e0_.self_id AS self_id_4, e1_.self_id AS self_id_5',
                     'FROM entity_with_1_to_1_self_referencing_bidirectional e0_',
                     'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional e1_ ON e0_.id = e1_.self_id',
                     'WHERE e0_.id IN (?)',
@@ -764,15 +764,15 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
-                'SELECT t0.id AS id_1, t0.self_id AS self_id_2, t3.id AS id_4, t3.self_id AS self_id_5',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.self_id AS self_id_3, t4.id AS id_5, t4.number AS number_6, t4.self_id AS self_id_7',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional t0',
-                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t3 ON t3.self_id = t0.id',
+                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t4 ON t4.self_id = t0.id',
                 'WHERE t0.id = ?',
             ]),
             ...array_fill(0, intdiv($depth + 1, 2), implode(' ', [
-                'SELECT t0.id AS id_1, t0.self_id AS self_id_2, t3.id AS id_4, t3.self_id AS self_id_5',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.self_id AS self_id_3, t4.id AS id_5, t4.number AS number_6, t4.self_id AS self_id_7',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional t0',
-                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t3 ON t3.self_id = t0.id',
+                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t4 ON t4.self_id = t0.id',
                 'WHERE t0.self_id = ?',
             ])),
         ]);
@@ -833,7 +833,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         if ($maxFetchJoinSameFieldCount === 1) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, e1_.id AS id_1, e0_.self_id AS self_id_2, e1_.self_id AS self_id_3',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e0_.self_id AS self_id_4, e1_.self_id AS self_id_5',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional e0_',
                 'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional e1_ ON e0_.id = e1_.self_id',
                 'WHERE e0_.id IN (?)',
@@ -841,7 +841,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         } elseif ($maxFetchJoinSameFieldCount === 2) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, e1_.id AS id_1, e2_.id AS id_2, e0_.self_id AS self_id_3, e1_.self_id AS self_id_4, e2_.self_id AS self_id_5',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e2_.id AS id_4, e2_.number AS number_5, e0_.self_id AS self_id_6, e1_.self_id AS self_id_7, e2_.self_id AS self_id_8',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional e0_',
                 'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional e1_ ON e0_.id = e1_.self_id',
                 'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional e2_ ON e1_.id = e2_.self_id',
@@ -850,7 +850,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         } elseif ($maxFetchJoinSameFieldCount === 3) {
             $expectedQueries[] = implode(' ', [
-                'SELECT e0_.id AS id_0, e1_.id AS id_1, e2_.id AS id_2, e3_.id AS id_3, e0_.self_id AS self_id_4, e1_.self_id AS self_id_5, e2_.self_id AS self_id_6, e3_.self_id AS self_id_7',
+                'SELECT e0_.id AS id_0, e0_.number AS number_1, e1_.id AS id_2, e1_.number AS number_3, e2_.id AS id_4, e2_.number AS number_5, e3_.id AS id_6, e3_.number AS number_7, e0_.self_id AS self_id_8, e1_.self_id AS self_id_9, e2_.self_id AS self_id_10, e3_.self_id AS self_id_11',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional e0_',
                 'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional e1_ ON e0_.id = e1_.self_id',
                 'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional e2_ ON e1_.id = e2_.self_id',
@@ -864,9 +864,9 @@ class EntityPreloadSyntheticTest extends TestCase
 
         for ($i = 0; $i < $expectedSingleFetchQueries; $i++) {
             $expectedQueries[] = implode(' ', [
-                'SELECT t0.id AS id_1, t0.self_id AS self_id_2, t3.id AS id_4, t3.self_id AS self_id_5',
+                'SELECT t0.id AS id_1, t0.number AS number_2, t0.self_id AS self_id_3, t4.id AS id_5, t4.number AS number_6, t4.self_id AS self_id_7',
                 'FROM entity_with_1_to_1_self_referencing_bidirectional t0',
-                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t3 ON t3.self_id = t0.id',
+                'LEFT JOIN entity_with_1_to_1_self_referencing_bidirectional t4 ON t4.self_id = t0.id',
                 'WHERE t0.self_id = ?',
             ]);
         }
