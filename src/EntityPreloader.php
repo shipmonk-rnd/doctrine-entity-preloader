@@ -126,13 +126,11 @@ class EntityPreloader
         $uninitializedIds = [];
 
         foreach ($entities as $entity) {
-            $isUninitializedObject = $this->entityManager->isUninitializedObject($entity);
-
             $entityId = $identifierAccessor->getValue($entity);
             $entityKey = (string) $entityId;
             $uniqueEntities[$entityKey] = $entity;
 
-            if ($isUninitializedObject) {
+            if ($this->entityManager->isUninitializedObject($entity)) {
                 $uninitializedIds[$entityKey] = $entityId;
             }
         }
