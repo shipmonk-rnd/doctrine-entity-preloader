@@ -18,7 +18,7 @@ abstract class TestEntityWithId
     protected int $id;
 
     #[Column(type: Types::INTEGER, nullable: true)]
-    public ?int $number;
+    protected ?int $number;
 
     /**
      * For performance reasons we can't explicitly throw LogicException when id is null:
