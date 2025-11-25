@@ -33,8 +33,10 @@ use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyIntegerTy
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Type\PrimaryKeyStringType;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\User;
 use Throwable;
+use function method_exists;
 use function unlink;
 use function version_compare;
+use const PHP_VERSION_ID;
 
 abstract class TestCase extends PhpUnitTestCase
 {
@@ -234,7 +236,14 @@ abstract class TestCase extends PhpUnitTestCase
         bool $inMemory = true,
     ): EntityManagerInterface
     {
-        $config = ORMSetup::createAttributeMetadataConfiguration([__DIR__ . '/../Fixtures'], isDevMode: true, proxyDir: __DIR__ . '/../../cache/proxies');
+        // Use new non-deprecated API on Doctrine ORM 3.5+ with PHP 8.4+
+        if (PHP_VERSION_ID >= 8_04_00 && method_exists(ORMSetup::class, 'createAttributeMetadataConfig')) { // @phpstan-ignore function.alreadyNarrowedType (BC for older Doctrine)
+            $config = ORMSetup::createAttributeMetadataConfig([__DIR__ . '/../Fixtures'], isDevMode: true);
+            $config->enableNativeLazyObjects(true);
+        } else {
+            $config = ORMSetup::createAttributeMetadataConfiguration([__DIR__ . '/../Fixtures'], isDevMode: true, proxyDir: __DIR__ . '/../../cache/proxies');
+        }
+
         $config->setNamingStrategy(new UnderscoreNamingStrategy());
         $config->setMiddlewares([new Middleware($logger)]);
 
