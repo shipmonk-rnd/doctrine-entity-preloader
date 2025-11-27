@@ -25,7 +25,7 @@
         "shipmonk/composer-dependency-analyser": "^1.7",
         "shipmonk/name-collision-detector": "^2.1.1",
         "shipmonk/phpstan-rules": "^4.0",
-        "symfony/cache": "^6 || ^7"
+        "symfony/cache": "^6 || ^7 || ^8"
     },
     "autoload": {
         "psr-4": {
