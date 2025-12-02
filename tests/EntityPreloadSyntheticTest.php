@@ -61,7 +61,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$freshEntityWithManyToOneEntityWithNoRelations], 'entityWithNoRelations');
+        $this->getEntityPreloader()->preload([$freshEntityWithManyToOneEntityWithNoRelations], 'entityWithNoRelations');
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
@@ -98,7 +98,7 @@ class EntityPreloadSyntheticTest extends TestCase
 
         $this->clearSqlCaptureMiddleware();
 
-        $this->whenPreloadIsCalled([$freshEntityWithManyToOneAbstractEntityWithNoRelations], 'abstractEntityWithNoRelations');
+        $this->getEntityPreloader()->preload([$freshEntityWithManyToOneAbstractEntityWithNoRelations], 'abstractEntityWithNoRelations');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -124,7 +124,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$freshEntityWithManyToOneOfManyToOneAbstractEntities], 'entityWithManyToOneAbstractEntityWithNoRelations');
+        $this->getEntityPreloader()->preload([$freshEntityWithManyToOneOfManyToOneAbstractEntities], 'entityWithManyToOneAbstractEntityWithNoRelations');
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
@@ -178,7 +178,7 @@ class EntityPreloadSyntheticTest extends TestCase
         $this->thenExpectedQueriesArePerformed($expectedQueries);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$freshEntityWithManyToOneOfManyToOneAbstractEntities], 'abstractEntityWithOptionalManyToOneItselfRelation');
+        $this->getEntityPreloader()->preload([$freshEntityWithManyToOneOfManyToOneAbstractEntities], 'abstractEntityWithOptionalManyToOneItselfRelation');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -244,7 +244,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$freshEntityWithManyToOneOfManyToOneOfManyToOneItselfRelation], 'entityWithManyToOneOfManyToOneItselfRelation', $maxFetchJoinSameFieldCount);
+        $this->getEntityPreloader()->preload([$freshEntityWithManyToOneOfManyToOneOfManyToOneItselfRelation], 'entityWithManyToOneOfManyToOneItselfRelation', maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount);
 
         $expectedQueries = [];
 
@@ -405,7 +405,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$owningSide], 'target');
+        $this->getEntityPreloader()->preload([$owningSide], 'target');
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
@@ -444,7 +444,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$owningSide], 'target');
+        $this->getEntityPreloader()->preload([$owningSide], 'target');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -476,7 +476,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$owningSide], 'target');
+        $this->getEntityPreloader()->preload([$owningSide], 'target');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -505,7 +505,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$pointer], 'target');
+        $this->getEntityPreloader()->preload([$pointer], 'target');
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
@@ -539,7 +539,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$owningSide], 'target');
+        $this->getEntityPreloader()->preload([$owningSide], 'target');
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
@@ -574,7 +574,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$inverseSide], 'back');
+        $this->getEntityPreloader()->preload([$inverseSide], 'back');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -601,7 +601,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$owningSide], 'target');
+        $this->getEntityPreloader()->preload([$owningSide], 'target');
 
         $this->thenExpectedQueriesArePerformed([
             implode(' ', [
@@ -633,7 +633,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$owningSide], 'target');
+        $this->getEntityPreloader()->preload([$owningSide], 'target');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -664,7 +664,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$entity], 'self');
+        $this->getEntityPreloader()->preload([$entity], 'self');
 
         if ($depth === 0) {
             $this->thenExpectedQueriesArePerformed([]);
@@ -717,7 +717,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$entity], 'self');
+        $this->getEntityPreloader()->preload([$entity], 'self');
 
         if ($depth === 0) {
             $this->thenExpectedQueriesArePerformed([]);
@@ -778,7 +778,7 @@ class EntityPreloadSyntheticTest extends TestCase
         ]);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$root], 'back');
+        $this->getEntityPreloader()->preload([$root], 'back');
 
         $this->thenExpectedQueriesArePerformed([]);
     }
@@ -827,7 +827,7 @@ class EntityPreloadSyntheticTest extends TestCase
         $pointer = $this->refreshExistingEntity($pointer);
 
         $this->clearSqlCaptureMiddleware();
-        $this->whenPreloadIsCalled([$pointer], 'target', $maxFetchJoinSameFieldCount);
+        $this->getEntityPreloader()->preload([$pointer], 'target', maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount);
 
         $expectedQueries = [];
 
@@ -945,19 +945,6 @@ class EntityPreloadSyntheticTest extends TestCase
         $this->getEntityManager()->persist($entityWithManyToOneOfManyToOneAbstractEntities);
 
         return $entityWithManyToOneOfManyToOneAbstractEntities;
-    }
-
-    /**
-     * @param non-negative-int|null $maxFetchJoinSameFieldCount
-     * @param list<object> $sourceEntities
-     */
-    private function whenPreloadIsCalled(
-        array $sourceEntities,
-        string $sourcePropertyName,
-        ?int $maxFetchJoinSameFieldCount = null,
-    ): void
-    {
-        $this->getEntityPreloader()->preload($sourceEntities, $sourcePropertyName, null, $maxFetchJoinSameFieldCount);
     }
 
     private function clearSqlCaptureMiddleware(): void

@@ -50,7 +50,7 @@ jobs:
                 run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction
             -
                 name: Install correct version of Doctrine
-                run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction --with-all-dependencies doctrine/orm:${{ matrix.doctrine-version }}
+                run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction --with-all-dependencies doctrine/orm:${{ matrix.doctrine-version }} symfony/cache
             -
                 name: Run tests
                 run: composer check:tests

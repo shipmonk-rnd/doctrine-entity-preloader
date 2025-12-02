@@ -9,7 +9,7 @@ use function password_verify;
 use const PASSWORD_DEFAULT;
 
 #[Entity]
-class User extends Contributor
+class User extends Contributor implements PasswordVerifier
 {
 
     #[Column]

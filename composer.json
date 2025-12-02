@@ -16,7 +16,8 @@
         "editorconfig-checker/editorconfig-checker": "^10.6.0",
         "ergebnis/composer-normalize": "^2.42.0",
         "nette/utils": "^4",
-        "phpstan/phpstan": "^2.0",
+        "nikic/php-parser": "^5.6",
+        "phpstan/phpstan": "^2.1.26",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^10.5",
@@ -24,6 +25,7 @@
         "shipmonk/coding-standard": "^0.2.0",
         "shipmonk/composer-dependency-analyser": "^1.7",
         "shipmonk/name-collision-detector": "^2.1.1",
+        "shipmonk/phpstan-dev": "^0.1.2",
         "shipmonk/phpstan-rules": "^4.0",
         "symfony/cache": "^6 || ^7 || ^8"
     },
@@ -43,6 +45,13 @@
             "ergebnis/composer-normalize": true
         },
         "sort-packages": true
+    },
+    "extra": {
+        "phpstan": {
+            "includes": [
+                "rules.neon"
+            ]
+        }
     },
     "scripts": {
         "check": [
