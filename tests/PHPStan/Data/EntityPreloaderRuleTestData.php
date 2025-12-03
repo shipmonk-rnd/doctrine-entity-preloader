@@ -25,6 +25,12 @@ final class EntityPreloaderRuleTestData
     {
     }
 
+    public function preloadVariablePropertyName(string $propertyName): void
+    {
+        $categories = $this->entityManager->getRepository(Category::class)->findAll();
+        assertType('list<object>', $this->entityPreloader->preload($categories, $propertyName)); // error: Second argument to function EntityPreloader::preload() must be constant string
+    }
+
     public function preloadOneHasMany(): void
     {
         $categories = $this->entityManager->getRepository(Category::class)->findAll();
