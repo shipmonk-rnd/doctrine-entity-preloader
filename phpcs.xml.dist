@@ -9,7 +9,5 @@
     <file>src/</file>
     <file>tests/</file>
 
-    <exclude-pattern>tests/**/Data/*</exclude-pattern>
-
     <rule ref="ShipMonkCodingStandard"/>
 </ruleset>

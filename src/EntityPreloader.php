@@ -34,6 +34,7 @@ class EntityPreloader
 
     /**
      * @param list<object> $sourceEntities
+     * @param literal-string $sourcePropertyName
      * @param positive-int|null $batchSize
      * @param non-negative-int|null $maxFetchJoinSameFieldCount
      * @return list<object>

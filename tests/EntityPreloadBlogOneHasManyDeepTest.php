@@ -129,6 +129,7 @@ class EntityPreloadBlogOneHasManyDeepTest extends TestCase
     {
         $this->createCategoryTree($primaryKey, depth: 5, branchingFactor: 5);
 
+        /** @var list<Category> $rootCategories */
         $rootCategories = $this->getEntityManager()->createQueryBuilder()
             ->select('category')
             ->from(Category::class, 'category')

@@ -5,6 +5,8 @@ includes:
     - ./vendor/phpstan/phpstan-phpunit/rules.neon
     - ./vendor/phpstan/phpstan-strict-rules/rules.neon
     - ./vendor/shipmonk/phpstan-rules/rules.neon
+    - ./extension.neon
+    - ./rules.neon
 
 parameters:
     paths:
@@ -13,6 +15,7 @@ parameters:
     excludePaths:
         analyse:
             - tests/Fixtures/Compat
+            - tests/PHPStan/Data
     checkMissingCallableSignature: true
     checkUninitializedProperties: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
