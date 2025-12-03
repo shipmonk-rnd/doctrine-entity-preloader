@@ -46,6 +46,18 @@ To install the library, use Composer:
 composer require shipmonk/doctrine-entity-preloader
 ```
 
+### PHPStan
+
+If you use [PHPStan](https://phpstan.org/) and have [phpstan/extension-installer](https://github.com/phpstan/extension-installer) installed, the extension and rules are enabled automatically.
+
+Otherwise, add the following to your `phpstan.neon`:
+
+```neon
+includes:
+    - vendor/shipmonk/doctrine-entity-preloader/extension.neon # return type extension
+    - vendor/shipmonk/doctrine-entity-preloader/rules.neon # EntityPreloaderRule
+```
+
 ## Usage
 
 Below is a basic example demonstrating how to use `EntityPreloader` to preload related entities and avoid the n+1 problem:

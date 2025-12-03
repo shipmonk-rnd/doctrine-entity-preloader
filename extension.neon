@@ -1,0 +1,5 @@
+services:
+    -
+        class: ShipMonk\DoctrineEntityPreloader\PHPStan\EntityPreloaderReturnTypeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension

@@ -22,4 +22,12 @@ final class EntityPreloaderRuleTest extends RuleTestCase
         $this->analyzeFiles([__DIR__ . '/Data/EntityPreloaderRuleTestData.php']);
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function getAdditionalConfigFiles(): array
+    {
+        return [__DIR__ . '/../../extension.neon'];
+    }
+
 }

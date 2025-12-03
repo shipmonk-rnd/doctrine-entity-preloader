@@ -34,7 +34,7 @@ final class EntityPreloaderReturnTypeExtensionTest extends TypeInferenceTestCase
      */
     public static function getAdditionalConfigFiles(): array
     {
-        return [__DIR__ . '/../../rules.neon'];
+        return [__DIR__ . '/../../extension.neon'];
     }
 
 }
