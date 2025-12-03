@@ -48,14 +48,19 @@ composer require shipmonk/doctrine-entity-preloader
 
 ### PHPStan
 
+This library provides PHPStan integration:
+
+- **extension.neon** - Infers return types for `EntityPreloader::preload()` based on the preloaded association
+- **rules.neon** - Validates that the property name passed to `preload()` exists on the entity
+
 If you use [PHPStan](https://phpstan.org/) and have [phpstan/extension-installer](https://github.com/phpstan/extension-installer) installed, the extension and rules are enabled automatically.
 
 Otherwise, add the following to your `phpstan.neon`:
 
 ```neon
 includes:
-    - vendor/shipmonk/doctrine-entity-preloader/extension.neon # return type extension
-    - vendor/shipmonk/doctrine-entity-preloader/rules.neon # EntityPreloaderRule
+    - vendor/shipmonk/doctrine-entity-preloader/extension.neon
+    - vendor/shipmonk/doctrine-entity-preloader/rules.neon
 ```
 
 ## Usage
