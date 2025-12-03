@@ -12,7 +12,6 @@ use PHPStan\Type\Accessory\AccessoryArrayListType;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\IntersectionType;
-use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
@@ -86,7 +85,7 @@ abstract class EntityPreloaderCore
             return $this->getAssociationTargetTypeFromObjectType($type, $propertyName);
 
         } else {
-            return new MixedType();
+            throw EntityPreloaderRuleException::propertyNotFound('object', $propertyName);
         }
     }
 
@@ -101,15 +100,7 @@ abstract class EntityPreloaderCore
         $propertyTypes = [];
 
         foreach ($type->getTypes() as $innerType) {
-            if ($innerType instanceof IntersectionType) { // @phpstan-ignore phpstanApi.instanceofType
-                $propertyTypes[] = $this->getAssociationTargetTypeFromIntersection($innerType, $propertyName);
-
-            } elseif ($innerType instanceof TypeWithClassName) { // @phpstan-ignore phpstanApi.instanceofType
-                $propertyTypes[] = $this->getAssociationTargetTypeFromObjectType($innerType, $propertyName);
-
-            } else {
-                $propertyTypes[] = new MixedType();
-            }
+            $propertyTypes[] = $this->getAssociationTargetType($innerType, $propertyName);
         }
 
         return TypeCombinator::union(...$propertyTypes);
@@ -127,13 +118,11 @@ abstract class EntityPreloaderCore
         $exceptions = [];
 
         foreach ($type->getTypes() as $innerType) {
-            if ($innerType instanceof TypeWithClassName) { // @phpstan-ignore phpstanApi.instanceofType
-                try {
-                    $propertyTypes[] = $this->getAssociationTargetTypeFromObjectType($innerType, $propertyName);
+            try {
+                $propertyTypes[] = $this->getAssociationTargetType($innerType, $propertyName);
 
-                } catch (EntityPreloaderRuleException $e) {
-                    $exceptions[] = $e;
-                }
+            } catch (EntityPreloaderRuleException $e) {
+                $exceptions[] = $e;
             }
         }
 

@@ -100,4 +100,12 @@ final class EntityPreloaderRuleTestData
         assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Comment>', $this->entityPreloader->preload($entities, 'comments'));
     }
 
+    /**
+     * @param list<object> $entities
+     */
+    public function preloadWithObject(array $entities): void
+    {
+        assertType('list<object>', $this->entityPreloader->preload($entities, 'foo')); // error: Property 'object::$foo' not found.
+    }
+
 }
