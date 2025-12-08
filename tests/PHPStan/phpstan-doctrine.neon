@@ -1,0 +1,6 @@
+includes:
+    - ../../vendor/phpstan/phpstan-doctrine/extension.neon
+
+parameters:
+    doctrine:
+        objectManagerLoader: %rootDir%/../../../tests/PHPStan/object-manager-loader.php

@@ -37,7 +37,7 @@ final class EntityPreloaderRuleTestData
         assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article>', $this->entityPreloader->preload($categories, 'articles'));
         assertType('list<object>', $this->entityPreloader->preload($categories, 'notFound')); // error: Property 'ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category::$notFound' not found.
         assertType('list<object>', $this->entityPreloader->preload($categories, 'name')); // error: Property 'ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category::$name' is not a valid Doctrine association.
-        assertType('list<object>', $this->entityPreloader->preload($categories, 'id')); // error: Property 'ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\TestEntityWithCustomPrimaryKey::$id' is not a valid Doctrine association.
+        assertType('list<object>', $this->entityPreloader->preload($categories, 'id')); // error: Property 'ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category::$id' is not a valid Doctrine association.
 
         $bots = $this->entityManager->getRepository(Bot::class)->findAll();
         assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Comment>', $this->entityPreloader->preload($bots, 'comments'));

@@ -63,6 +63,8 @@ includes:
     - vendor/shipmonk/doctrine-entity-preloader/rules.neon
 ```
 
+If [phpstan/phpstan-doctrine](https://github.com/phpstan/phpstan-doctrine) is installed, real Doctrine metadata will be used for more accurate type inference.
+
 ## Usage
 
 Below is a basic example demonstrating how to use `EntityPreloader` to preload related entities and avoid the n+1 problem:
