@@ -6,4 +6,5 @@ use ShipMonk\ComposerDependencyAnalyser\Config\ErrorType;
 return (new Configuration())
     ->ignoreUnknownFunctions(['PHPStan\Testing\assertType'])
     ->ignoreErrorsOnPackage('nikic/php-parser', [ErrorType::DEV_DEPENDENCY_IN_PROD])
-    ->ignoreErrorsOnPackage('phpstan/phpstan', [ErrorType::DEV_DEPENDENCY_IN_PROD]);
+    ->ignoreErrorsOnPackage('phpstan/phpstan', [ErrorType::DEV_DEPENDENCY_IN_PROD])
+    ->ignoreErrorsOnPackage('phpstan/phpstan-doctrine', [ErrorType::DEV_DEPENDENCY_IN_PROD]);

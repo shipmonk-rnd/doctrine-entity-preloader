@@ -10,6 +10,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\Accessory\AccessoryArrayListType;
 use PHPStan\Type\ArrayType;
+use PHPStan\Type\Doctrine\ObjectMetadataResolver;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\ObjectType;
@@ -24,6 +25,12 @@ use function is_string;
 
 abstract class EntityPreloaderCore
 {
+
+    public function __construct(
+        private ?ObjectMetadataResolver $objectMetadataResolver = null,
+    )
+    {
+    }
 
     protected function getPreloadedPropertyName(
         MethodCall $methodCall,
@@ -147,10 +154,18 @@ abstract class EntityPreloaderCore
             throw EntityPreloaderRuleException::classNotFound($type->getClassName());
         }
 
+        if ($this->objectMetadataResolver !== null) {
+            return $this->getAssociationTargetTypeFromMetadata(
+                $this->objectMetadataResolver,
+                $classReflection->getName(),
+                $propertyName,
+            );
+        }
+
         for ($currentClassReflection = $classReflection; $currentClassReflection !== null; $currentClassReflection = $currentClassReflection->getParentClass()) {
             if ($currentClassReflection->hasInstanceProperty($propertyName)) {
                 $propertyReflection = $currentClassReflection->getNativeProperty($propertyName)->getNativeReflection();
-                return $this->getAssociationTargetTypeFromPropertyReflection($propertyReflection);
+                return $this->getAssociationTargetTypeFromPropertyReflection($classReflection->getName(), $propertyReflection);
             }
         }
 
@@ -158,9 +173,39 @@ abstract class EntityPreloaderCore
     }
 
     /**
+     * @param class-string $className
+     *
      * @throws EntityPreloaderRuleException
      */
-    private function getAssociationTargetTypeFromPropertyReflection(ReflectionProperty $propertyReflection): Type
+    private function getAssociationTargetTypeFromMetadata(
+        ObjectMetadataResolver $metadataResolver,
+        string $className,
+        string $propertyName,
+    ): Type
+    {
+        $classMetadata = $metadataResolver->getClassMetadata($className);
+
+        if ($classMetadata === null) {
+            throw EntityPreloaderRuleException::classNotFound($className);
+        }
+
+        if (!$classMetadata->hasAssociation($propertyName)) {
+            throw $classMetadata->hasField($propertyName)
+                ? EntityPreloaderRuleException::invalidAssociations($className, $propertyName)
+                : EntityPreloaderRuleException::propertyNotFound($className, $propertyName);
+        }
+
+        $associationMapping = $classMetadata->getAssociationMapping($propertyName);
+        return new ObjectType($associationMapping['targetEntity']);
+    }
+
+    /**
+     * @throws EntityPreloaderRuleException
+     */
+    private function getAssociationTargetTypeFromPropertyReflection(
+        string $className,
+        ReflectionProperty $propertyReflection,
+    ): Type
     {
         $associationAttributes = [
             OneToOne::class,
@@ -182,7 +227,7 @@ abstract class EntityPreloaderCore
             }
         }
 
-        throw EntityPreloaderRuleException::invalidAssociations($propertyReflection->getDeclaringClass()->getName(), $propertyReflection->getName());
+        throw EntityPreloaderRuleException::invalidAssociations($className, $propertyReflection->getName());
     }
 
     protected function createListType(Type $type): Type

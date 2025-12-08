@@ -5,7 +5,7 @@ namespace ShipMonkTests\DoctrineEntityPreloader\PHPStan;
 use PHPStan\Testing\TypeInferenceTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
-final class EntityPreloaderReturnTypeExtensionTest extends TypeInferenceTestCase
+final class EntityPreloaderReturnTypeExtensionWithMetadataTest extends TypeInferenceTestCase
 {
 
     #[DataProvider('provideTypeAssertsData')]
@@ -28,7 +28,10 @@ final class EntityPreloaderReturnTypeExtensionTest extends TypeInferenceTestCase
      */
     public static function getAdditionalConfigFiles(): array
     {
-        return [__DIR__ . '/../../extension.neon'];
+        return [
+            __DIR__ . '/phpstan-doctrine.neon',
+            __DIR__ . '/../../extension.neon',
+        ];
     }
 
 }
