@@ -63,7 +63,7 @@ includes:
     - vendor/shipmonk/doctrine-entity-preloader/rules.neon
 ```
 
-If [phpstan/phpstan-doctrine](https://github.com/phpstan/phpstan-doctrine) is installed, real Doctrine metadata will be used for more accurate type inference.
+If [phpstan/phpstan-doctrine](https://github.com/phpstan/phpstan-doctrine) is installed and `objectManagerLoader` is used, all mapping formats become available (xml, phpdoc, yaml). Otherwise, only modern attributes are supported.
 
 ## Usage
 
