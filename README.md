@@ -84,11 +84,11 @@ foreach ($categories as $category) {
     foreach ($category->getArticles() as $article) {
         echo $article->getTitle(), "\n";
 
-        foreach ($articles->getTags() as $tag) {
+        foreach ($article->getTags() as $tag) {
             echo $tag->getLabel(), "\n";
         }
 
-        foreach ($articles->getComments() as $comment) {
+        foreach ($article->getComments() as $comment) {
             echo $comment->getText(), "\n";
         }
     }
