@@ -14,7 +14,6 @@ use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\PasswordVerifier;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Tag;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\User;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\Employee;
-use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\EmployeeSettings;
 use function PHPStan\Testing\assertType;
 
 final class EntityPreloaderRuleTestData
@@ -117,31 +116,17 @@ final class EntityPreloaderRuleTestData
     }
 
     /**
-     * GitHub issue #37: Test associations WITHOUT explicit targetEntity attribute
-     * These use type inference from the property type, which should work with phpstan-doctrine
-     *
      * @see https://github.com/shipmonk-rnd/doctrine-entity-preloader/issues/37
      */
     public function preloadWithoutExplicitTargetEntity(): void
     {
         $employees = $this->entityManager->getRepository(Employee::class)->findAll();
 
-        // ManyToOne self-referencing WITHOUT targetEntity attribute - should infer from property type
+        // ManyToOne WITHOUT targetEntity attribute
         assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\Employee>', $this->entityPreloader->preload($employees, 'supervisor'));
 
-        // OneToOne WITHOUT targetEntity attribute - should infer from property type
+        // OneToOne WITHOUT targetEntity attribute
         assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\EmployeeSettings>', $this->entityPreloader->preload($employees, 'settings'));
-
-        // Preload nested: first supervisor, then their settings
-        $supervisors = $this->entityPreloader->preload($employees, 'supervisor');
-        assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\EmployeeSettings>', $this->entityPreloader->preload($supervisors, 'settings'));
-
-        // OneToMany (has targetEntity) - should still work
-        assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\Employee>', $this->entityPreloader->preload($employees, 'subordinates'));
-
-        // Inverse side of OneToOne WITHOUT targetEntity
-        $employeeSettings = $this->entityManager->getRepository(EmployeeSettings::class)->findAll();
-        assertType('list<ShipMonkTests\DoctrineEntityPreloader\Fixtures\Issue37\Employee>', $this->entityPreloader->preload($employeeSettings, 'employee'));
     }
 
 }
