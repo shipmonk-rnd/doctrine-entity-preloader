@@ -118,6 +118,28 @@ class EntityPreloadBlogManyHasOneTest extends TestCase
         ]);
     }
 
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasOneWithPreloadReadOnly(DbalType $primaryKey): void
+    {
+        $this->createDummyBlogData($primaryKey, categoryCount: 5, articleInEachCategoryCount: 5);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+        $categories = $this->getEntityPreloader()->preload($articles, 'category', readOnly: true);
+
+        self::assertCount(5, $categories);
+
+        // Verify that preloaded categories are marked as read-only
+        $unitOfWork = $this->getEntityManager()->getUnitOfWork();
+        foreach ($categories as $category) {
+            self::assertTrue($unitOfWork->isReadOnly($category), 'Category should be marked as read-only');
+        }
+
+        self::assertAggregatedQueries([
+            ['count' => 1, 'query' => 'SELECT * FROM article t0'],
+            ['count' => 1, 'query' => 'SELECT * FROM category c0_ WHERE c0_.id IN (?, ?, ?, ?, ?)'],
+        ]);
+    }
+
     /**
      * @param array<Article> $articles
      */
