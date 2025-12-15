@@ -65,7 +65,13 @@ class EntityPreloader
         }
 
         $maxFetchJoinSameFieldCount ??= 1;
-        $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE, $maxFetchJoinSameFieldCount, $readOnly);
+        $sourceEntities = $this->loadProxies(
+            $sourceClassMetadata,
+            $sourceEntities,
+            $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE,
+            $maxFetchJoinSameFieldCount,
+            $readOnly,
+        );
 
         $preloader = match ($associationMapping['type']) {
             ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE => $this->preloadToOne(...),
@@ -73,19 +79,7 @@ class EntityPreloader
             default => throw new LogicException("Unsupported association mapping type {$associationMapping['type']}"),
         };
 
-        $result = $preloader($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount, $readOnly);
-
-        if ($readOnly) {
-            $unitOfWork = $this->entityManager->getUnitOfWork();
-
-            foreach ($result as $entity) {
-                if (!$unitOfWork->isReadOnly($entity)) {
-                    $unitOfWork->markReadOnly($entity);
-                }
-            }
-        }
-
-        return $result;
+        return $preloader($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount, $readOnly);
     }
 
     /**
@@ -328,7 +322,7 @@ class EntityPreloader
 
         $sourceIdentifierType = $this->getIdentifierFieldType($sourceClassMetadata);
 
-        $manyToManyQuery = $this->entityManager->createQueryBuilder()
+        $manyToManyRows = $this->entityManager->createQueryBuilder()
             ->select("source.{$sourceIdentifierName} AS sourceId", "target.{$targetIdentifierName} AS targetId")
             ->from($sourceClassMetadata->getName(), 'source')
             ->join("source.{$sourcePropertyName}", 'target')
@@ -338,13 +332,9 @@ class EntityPreloader
                 $this->convertFieldValuesToDatabaseValues($sourceIdentifierType, $uninitializedSourceEntityIdsChunk),
                 $this->deduceArrayParameterType($sourceIdentifierType),
             )
-            ->getQuery();
-
-        if ($readOnly) {
-            $manyToManyQuery->setHint(Query::HINT_READ_ONLY, true);
-        }
-
-        $manyToManyRows = $manyToManyQuery->getResult();
+            ->getQuery()
+            ->setHint(Query::HINT_READ_ONLY, $readOnly)
+            ->getResult();
 
         $targetEntities = [];
         $uninitializedTargetEntityIds = [];
@@ -459,13 +449,10 @@ class EntityPreloader
             $queryBuilder->addOrderBy("{$rootLevelAlias}.{$field}", $direction);
         }
 
-        $query = $queryBuilder->getQuery();
-
-        if ($readOnly) {
-            $query->setHint(Query::HINT_READ_ONLY, true);
-        }
-
-        return $query->getResult();
+        return $queryBuilder
+            ->getQuery()
+            ->setHint(Query::HINT_READ_ONLY, $readOnly)
+            ->getResult();
     }
 
     private function deduceArrayParameterType(Type $dbalType): ArrayParameterType|int|null // @phpstan-ignore return.unusedType (old dbal compat)
