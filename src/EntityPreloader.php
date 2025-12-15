@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\PropertyAccessors\PropertyAccessor;
 use Doctrine\ORM\PersistentCollection;
+use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use LogicException;
 use ReflectionProperty;
@@ -44,6 +45,7 @@ class EntityPreloader
         string $sourcePropertyName,
         ?int $batchSize = null,
         ?int $maxFetchJoinSameFieldCount = null,
+        bool $readOnly = false,
     ): array
     {
         $sourceEntitiesCommonAncestor = $this->getCommonAncestor($sourceEntities);
@@ -62,16 +64,26 @@ class EntityPreloader
             throw new LogicException('Preloading of indexed associations is not supported');
         }
 
+        $isToOne = $associationMapping['type'] === ClassMetadata::ONE_TO_ONE
+            || $associationMapping['type'] === ClassMetadata::MANY_TO_ONE;
+
+        if ($readOnly && $isToOne) {
+            throw new LogicException('The readOnly option is not supported for toOne associations');
+        }
+
         $maxFetchJoinSameFieldCount ??= 1;
-        $sourceEntities = $this->loadProxies($sourceClassMetadata, $sourceEntities, $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE, $maxFetchJoinSameFieldCount);
+        $sourceEntities = $this->loadProxies(
+            $sourceClassMetadata,
+            $sourceEntities,
+            $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE,
+            $maxFetchJoinSameFieldCount,
+        );
 
-        $preloader = match ($associationMapping['type']) {
-            ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE => $this->preloadToOne(...),
-            ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY => $this->preloadToMany(...),
-            default => throw new LogicException("Unsupported association mapping type {$associationMapping['type']}"),
-        };
+        if ($isToOne) {
+            return $this->preloadToOne($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount);
+        }
 
-        return $preloader($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount);
+        return $this->preloadToMany($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount, $readOnly);
     }
 
     /**
@@ -158,6 +170,7 @@ class EntityPreloader
         ClassMetadata $targetClassMetadata,
         ?int $batchSize,
         int $maxFetchJoinSameFieldCount,
+        bool $readOnly,
     ): array
     {
         $sourceIdentifierAccessor = $this->getSingleIdPropertyAccessor($sourceClassMetadata); // e.g. Order::$id reflection
@@ -213,6 +226,7 @@ class EntityPreloader
                 uninitializedSourceEntityIdsChunk: array_values($uninitializedSourceEntityIdsChunk),
                 uninitializedCollections: $uninitializedCollections,
                 maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount,
+                readOnly: $readOnly,
             );
 
             foreach ($targetEntitiesChunk as $targetEntityKey => $targetEntity) {
@@ -247,6 +261,7 @@ class EntityPreloader
         array $uninitializedSourceEntityIdsChunk,
         array $uninitializedCollections,
         int $maxFetchJoinSameFieldCount,
+        bool $readOnly,
     ): array
     {
         $targetPropertyName = $sourceClassMetadata->getAssociationMappedByTargetField($sourcePropertyName); // e.g. 'order'
@@ -264,6 +279,7 @@ class EntityPreloader
             $uninitializedSourceEntityIdsChunk,
             $maxFetchJoinSameFieldCount,
             $associationMapping['orderBy'] ?? [],
+            $readOnly,
         );
 
         foreach ($targetEntitiesList as $targetEntity) {
@@ -297,6 +313,7 @@ class EntityPreloader
         array $uninitializedSourceEntityIdsChunk,
         array $uninitializedCollections,
         int $maxFetchJoinSameFieldCount,
+        bool $readOnly,
     ): array
     {
         if (count($associationMapping['orderBy'] ?? []) > 0) {
@@ -319,6 +336,7 @@ class EntityPreloader
                 $this->deduceArrayParameterType($sourceIdentifierType),
             )
             ->getQuery()
+            ->setHint(Query::HINT_READ_ONLY, $readOnly)
             ->getResult();
 
         $targetEntities = [];
@@ -339,7 +357,7 @@ class EntityPreloader
             $uninitializedTargetEntityIds[$targetEntityKey] = $targetEntityId;
         }
 
-        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $sourceClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
+        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $sourceClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount, readOnly: $readOnly) as $targetEntity) {
             $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
             $targetEntities[$targetEntityKey] = $targetEntity;
         }
@@ -407,6 +425,7 @@ class EntityPreloader
         array $fieldValues,
         int $maxFetchJoinSameFieldCount,
         array $orderBy = [],
+        bool $readOnly = false,
     ): array
     {
         if (count($fieldValues) === 0) {
@@ -432,7 +451,10 @@ class EntityPreloader
             $queryBuilder->addOrderBy("{$rootLevelAlias}.{$field}", $direction);
         }
 
-        return $queryBuilder->getQuery()->getResult();
+        return $queryBuilder
+            ->getQuery()
+            ->setHint(Query::HINT_READ_ONLY, $readOnly)
+            ->getResult();
     }
 
     private function deduceArrayParameterType(Type $dbalType): ArrayParameterType|int|null // @phpstan-ignore return.unusedType (old dbal compat)

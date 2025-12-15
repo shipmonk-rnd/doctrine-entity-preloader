@@ -101,13 +101,15 @@ foreach ($categories as $category) {
 
 - **Batch Size:** Set a custom batch size for preloading to optimize memory usage.
 - **Max Fetch Join Same Field Count:** Define the maximum number of join fetches allowed per field.
+- **Read Only:** Mark preloaded entities as read-only to disable change tracking and improve performance (only supported for `#[OneToMany]` and `#[ManyToMany]` associations).
 
 ```php
 $preloader->preload(
     $articles,
     'category',
     batchSize: 20,
-    maxFetchJoinSameFieldCount: 5
+    maxFetchJoinSameFieldCount: 5,
+    readOnly: true,
 );
 ```
 

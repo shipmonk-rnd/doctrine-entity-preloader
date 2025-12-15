@@ -118,6 +118,20 @@ class EntityPreloadBlogManyHasOneTest extends TestCase
         ]);
     }
 
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasOneWithPreloadReadOnlyThrowsException(DbalType $primaryKey): void
+    {
+        $this->createDummyBlogData($primaryKey, categoryCount: 5, articleInEachCategoryCount: 5);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+
+        self::assertException(
+            \LogicException::class,
+            'The readOnly option is not supported for toOne associations',
+            fn () => $this->getEntityPreloader()->preload($articles, 'category', readOnly: true),
+        );
+    }
+
     /**
      * @param array<Article> $articles
      */

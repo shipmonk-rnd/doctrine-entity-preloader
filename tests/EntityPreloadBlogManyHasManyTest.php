@@ -115,6 +115,29 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         ]);
     }
 
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyWithPreloadReadOnly(DbalType $primaryKey): void
+    {
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 5, tagForEachArticleCount: 5);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+        $tags = $this->getEntityPreloader()->preload($articles, 'tags', readOnly: true);
+
+        self::assertCount(25, $tags);
+
+        // Verify that preloaded tags are marked as read-only
+        $unitOfWork = $this->getEntityManager()->getUnitOfWork();
+        foreach ($tags as $tag) {
+            self::assertTrue($unitOfWork->isReadOnly($tag), 'Tag should be marked as read-only');
+        }
+
+        self::assertAggregatedQueries([
+            ['count' => 1, 'query' => 'SELECT * FROM article t0'],
+            ['count' => 1, 'query' => 'SELECT * FROM article a0_ INNER JOIN article_tag a2_ ON a0_.id = a2_.article_id INNER JOIN tag t1_ ON t1_.id = a2_.tag_id WHERE a0_.id IN (?, ?, ?, ?, ?)'],
+            ['count' => 1, 'query' => 'SELECT * FROM tag t0_ WHERE t0_.id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'],
+        ]);
+    }
+
     /**
      * @param array<Article> $articles
      */
