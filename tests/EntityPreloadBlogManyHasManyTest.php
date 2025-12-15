@@ -125,6 +125,12 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
 
         self::assertCount(25, $tags);
 
+        // Verify that preloaded tags are marked as read-only
+        $unitOfWork = $this->getEntityManager()->getUnitOfWork();
+        foreach ($tags as $tag) {
+            self::assertTrue($unitOfWork->isReadOnly($tag), 'Tag should be marked as read-only');
+        }
+
         self::assertAggregatedQueries([
             ['count' => 1, 'query' => 'SELECT * FROM article t0'],
             ['count' => 1, 'query' => 'SELECT * FROM article a0_ INNER JOIN article_tag a2_ ON a0_.id = a2_.article_id INNER JOIN tag t1_ ON t1_.id = a2_.tag_id WHERE a0_.id IN (?, ?, ?, ?, ?)'],

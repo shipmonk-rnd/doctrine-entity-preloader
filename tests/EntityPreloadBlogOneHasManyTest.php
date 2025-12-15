@@ -149,6 +149,12 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
 
         self::assertCount(25, $articles);
 
+        // Verify that preloaded articles are marked as read-only
+        $unitOfWork = $this->getEntityManager()->getUnitOfWork();
+        foreach ($articles as $article) {
+            self::assertTrue($unitOfWork->isReadOnly($article), 'Article should be marked as read-only');
+        }
+
         self::assertAggregatedQueries([
             ['count' => 1, 'query' => 'SELECT * FROM category t0'],
             ['count' => 1, 'query' => 'SELECT * FROM article a0_ WHERE a0_.category_id IN (?, ?, ?, ?, ?)'],

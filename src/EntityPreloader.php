@@ -64,22 +64,26 @@ class EntityPreloader
             throw new LogicException('Preloading of indexed associations is not supported');
         }
 
+        $isToOne = $associationMapping['type'] === ClassMetadata::ONE_TO_ONE
+            || $associationMapping['type'] === ClassMetadata::MANY_TO_ONE;
+
+        if ($readOnly && $isToOne) {
+            throw new LogicException('The readOnly option is not supported for toOne associations');
+        }
+
         $maxFetchJoinSameFieldCount ??= 1;
         $sourceEntities = $this->loadProxies(
             $sourceClassMetadata,
             $sourceEntities,
             $batchSize ?? self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE,
             $maxFetchJoinSameFieldCount,
-            $readOnly,
         );
 
-        $preloader = match ($associationMapping['type']) {
-            ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE => $this->preloadToOne(...),
-            ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY => $this->preloadToMany(...),
-            default => throw new LogicException("Unsupported association mapping type {$associationMapping['type']}"),
-        };
+        if ($isToOne) {
+            return $this->preloadToOne($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount);
+        }
 
-        return $preloader($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount, $readOnly);
+        return $this->preloadToMany($sourceEntities, $sourceClassMetadata, $sourcePropertyName, $targetClassMetadata, $batchSize, $maxFetchJoinSameFieldCount, $readOnly);
     }
 
     /**
@@ -122,7 +126,6 @@ class EntityPreloader
         array $entities,
         int $batchSize,
         int $maxFetchJoinSameFieldCount,
-        bool $readOnly,
     ): array
     {
         $identifierAccessor = $this->getSingleIdPropertyAccessor($classMetadata); // e.g. Order::$id reflection
@@ -146,7 +149,7 @@ class EntityPreloader
         }
 
         foreach (array_chunk($uninitializedIds, $batchSize) as $idsChunk) {
-            $this->loadEntitiesBy($classMetadata, $identifierName, $classMetadata, $idsChunk, $maxFetchJoinSameFieldCount, readOnly: $readOnly);
+            $this->loadEntitiesBy($classMetadata, $identifierName, $classMetadata, $idsChunk, $maxFetchJoinSameFieldCount);
         }
 
         return array_values($uniqueEntities);
@@ -383,7 +386,6 @@ class EntityPreloader
         ClassMetadata $targetClassMetadata,
         ?int $batchSize,
         int $maxFetchJoinSameFieldCount,
-        bool $readOnly,
     ): array
     {
         $sourcePropertyAccessor = $this->getPropertyAccessor($sourceClassMetadata, $sourcePropertyName); // e.g. Item::$order reflection
@@ -405,7 +407,7 @@ class EntityPreloader
             $targetEntities[] = $targetEntity;
         }
 
-        return $this->loadProxies($targetClassMetadata, $targetEntities, $batchSize, $maxFetchJoinSameFieldCount, $readOnly);
+        return $this->loadProxies($targetClassMetadata, $targetEntities, $batchSize, $maxFetchJoinSameFieldCount);
     }
 
     /**
