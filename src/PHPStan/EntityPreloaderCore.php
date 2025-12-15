@@ -21,6 +21,7 @@ use PHPStan\Type\UnionType;
 use ReflectionNamedType;
 use ReflectionProperty;
 use function count;
+use function in_array;
 use function is_string;
 
 abstract class EntityPreloaderCore
@@ -214,14 +215,17 @@ abstract class EntityPreloaderCore
             ManyToMany::class,
         ];
 
+        $toOneAssociations = [OneToOne::class, ManyToOne::class];
+
         foreach ($associationAttributes as $attributeClass) {
             foreach ($propertyReflection->getAttributes($attributeClass) as $attributeReflection) {
                 $attribute = $attributeReflection->newInstance();
 
                 if ($attribute->targetEntity !== null) {
                     return new ObjectType($attribute->targetEntity);
+                }
 
-                } elseif ($attributeClass === OneToOne::class && $propertyReflection->getType() instanceof ReflectionNamedType) {
+                if (in_array($attributeClass, $toOneAssociations, true) && $propertyReflection->getType() instanceof ReflectionNamedType) {
                     return new ObjectType($propertyReflection->getType()->getName());
                 }
             }
