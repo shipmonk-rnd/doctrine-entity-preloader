@@ -339,9 +339,11 @@ class EntityPreloader
             $uninitializedTargetEntityIds[$targetEntityKey] = $targetEntityId;
         }
 
-        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $targetClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
-            $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
-            $targetEntities[$targetEntityKey] = $targetEntity;
+        foreach (array_chunk($uninitializedTargetEntityIds, self::PRELOAD_ENTITY_DEFAULT_BATCH_SIZE) as $uninitializedTargetEntityIdsChunk) {
+            foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $targetClassMetadata, $uninitializedTargetEntityIdsChunk, $maxFetchJoinSameFieldCount) as $targetEntity) {
+                $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
+                $targetEntities[$targetEntityKey] = $targetEntity;
+            }
         }
 
         foreach ($manyToManyRows as $manyToManyRow) {

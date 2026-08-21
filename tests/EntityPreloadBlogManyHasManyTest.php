@@ -7,7 +7,11 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
+use function array_filter;
 use function array_map;
+use function array_values;
+use function str_contains;
+use function substr_count;
 
 class EntityPreloadBlogManyHasManyTest extends TestCase
 {
@@ -113,6 +117,28 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
             ['count' => 1, 'query' => 'SELECT * FROM article a0_ INNER JOIN article_tag a2_ ON a0_.id = a2_.article_id INNER JOIN tag t1_ ON t1_.id = a2_.tag_id WHERE a0_.id IN (?, ?, ?, ?, ?)'],
             ['count' => 1, 'query' => 'SELECT * FROM tag t0_ WHERE t0_.id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'],
         ]);
+    }
+
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyWithPreloadChunksTargetEntityLoad(DbalType $primaryKey): void
+    {
+        // 3 articles * 400 distinct tags = 1_200 uninitialized targets in a single source chunk,
+        // which must be loaded in two batches of PRELOAD_ENTITY_DEFAULT_BATCH_SIZE (1_000) and 200
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 3, tagForEachArticleCount: 400);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+        $this->getEntityPreloader()->preload($articles, 'tags');
+
+        $this->readTagLabels($articles);
+
+        $tagLoadQueries = array_values(array_filter(
+            $this->getQueryLogger()->getQueries(),
+            static fn (string $query): bool => str_contains($query, 'FROM tag t0_'),
+        ));
+
+        self::assertCount(2, $tagLoadQueries);
+        self::assertSame(1_000, substr_count($tagLoadQueries[0], '?'));
+        self::assertSame(200, substr_count($tagLoadQueries[1], '?'));
     }
 
     /**
