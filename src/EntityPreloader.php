@@ -339,7 +339,7 @@ class EntityPreloader
             $uninitializedTargetEntityIds[$targetEntityKey] = $targetEntityId;
         }
 
-        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $sourceClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
+        foreach ($this->loadEntitiesBy($targetClassMetadata, $targetIdentifierName, $targetClassMetadata, array_values($uninitializedTargetEntityIds), $maxFetchJoinSameFieldCount) as $targetEntity) {
             $targetEntityKey = (string) $targetIdentifierAccessor->getValue($targetEntity);
             $targetEntities[$targetEntityKey] = $targetEntity;
         }
