@@ -183,6 +183,7 @@ class EntityPreloader
                 && !$sourceEntityCollection->isInitialized()
                 && !$sourceEntityCollection->isDirty() // preloading dirty collection is too hard to handle
             ) {
+                $sourceEntityCollection->unwrap()->clear(); // may hold already flushed elements, which are loaded again (same as PersistentCollection::doInitialize)
                 $uninitializedSourceEntityIds[$sourceEntityKey] = $sourceEntityId;
                 $uninitializedCollections[$sourceEntityKey] = $sourceEntityCollection;
                 continue;
@@ -196,24 +197,31 @@ class EntityPreloader
 
         $associationMapping = $sourceClassMetadata->getAssociationMapping($sourcePropertyName);
 
-        $innerLoader = match ($associationMapping['type']) {
-            ClassMetadata::ONE_TO_MANY => $this->preloadOneToManyInner(...),
-            ClassMetadata::MANY_TO_MANY => $this->preloadManyToManyInner(...),
-            default => throw new LogicException('Unsupported association mapping type'),
-        };
-
         foreach (array_chunk($uninitializedSourceEntityIds, $batchSize, preserve_keys: true) as $uninitializedSourceEntityIdsChunk) {
-            $targetEntitiesChunk = $innerLoader(
-                associationMapping: $associationMapping,
-                sourceClassMetadata: $sourceClassMetadata,
-                sourceIdentifierAccessor: $sourceIdentifierAccessor,
-                sourcePropertyName: $sourcePropertyName,
-                targetClassMetadata: $targetClassMetadata,
-                targetIdentifierAccessor: $targetIdentifierAccessor,
-                uninitializedSourceEntityIdsChunk: array_values($uninitializedSourceEntityIdsChunk),
-                uninitializedCollections: $uninitializedCollections,
-                maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount,
-            );
+            $targetEntitiesChunk = match ($associationMapping['type']) {
+                ClassMetadata::ONE_TO_MANY => $this->preloadOneToManyInner(
+                    associationMapping: $associationMapping,
+                    sourceClassMetadata: $sourceClassMetadata,
+                    sourceIdentifierAccessor: $sourceIdentifierAccessor,
+                    sourcePropertyName: $sourcePropertyName,
+                    targetClassMetadata: $targetClassMetadata,
+                    targetIdentifierAccessor: $targetIdentifierAccessor,
+                    uninitializedSourceEntityIdsChunk: array_values($uninitializedSourceEntityIdsChunk),
+                    uninitializedCollections: $uninitializedCollections,
+                    maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount,
+                ),
+                ClassMetadata::MANY_TO_MANY => $this->preloadManyToManyInner(
+                    associationMapping: $associationMapping,
+                    sourceClassMetadata: $sourceClassMetadata,
+                    sourcePropertyName: $sourcePropertyName,
+                    targetClassMetadata: $targetClassMetadata,
+                    targetIdentifierAccessor: $targetIdentifierAccessor,
+                    uninitializedSourceEntityIdsChunk: array_values($uninitializedSourceEntityIdsChunk),
+                    uninitializedCollections: $uninitializedCollections,
+                    maxFetchJoinSameFieldCount: $maxFetchJoinSameFieldCount,
+                ),
+                default => throw new LogicException('Unsupported association mapping type'),
+            };
 
             foreach ($targetEntitiesChunk as $targetEntityKey => $targetEntity) {
                 $targetEntities[$targetEntityKey] = $targetEntity;
@@ -290,7 +298,6 @@ class EntityPreloader
     private function preloadManyToManyInner(
         array|ArrayAccess $associationMapping,
         ClassMetadata $sourceClassMetadata,
-        PropertyAccessor|ReflectionProperty $sourceIdentifierAccessor,
         string $sourcePropertyName,
         ClassMetadata $targetClassMetadata,
         PropertyAccessor|ReflectionProperty $targetIdentifierAccessor,

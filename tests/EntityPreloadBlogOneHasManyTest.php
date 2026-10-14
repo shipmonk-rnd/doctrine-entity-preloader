@@ -4,11 +4,13 @@ namespace ShipMonkTests\DoctrineEntityPreloader;
 
 use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\PersistentCollection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Category;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
 use function array_map;
+use function array_values;
 
 class EntityPreloadBlogOneHasManyTest extends TestCase
 {
@@ -137,6 +139,44 @@ class EntityPreloadBlogOneHasManyTest extends TestCase
             ['count' => 1, 'query' => 'SELECT * FROM category t0'],
             ['count' => 1, 'query' => 'SELECT * FROM article a0_ WHERE a0_.category_id IN (?, ?, ?, ?, ?)'],
         ]);
+    }
+
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testOneHasManyWithPreloadOfUninitializedCollectionWithFlushedElement(DbalType $primaryKey): void
+    {
+        $this->createDummyBlogData($primaryKey, categoryCount: 2, articleInEachCategoryCount: 2);
+
+        $categories = $this->getEntityManager()->getRepository(Category::class)->findAll();
+        $articles = $categories[0]->getArticles();
+        self::assertInstanceOf(PersistentCollection::class, $articles);
+
+        $newArticle = new Article('NewArticle', 'Content of new article');
+        $this->getEntityManager()->getClassMetadata(Article::class)->setFieldValue($newArticle, 'category', $categories[0]); // Category::addArticle() would initialize the collection
+        $this->getEntityManager()->persist($newArticle);
+        $articles->add($newArticle); // does not initialize the collection
+        $this->getEntityManager()->flush(); // takes snapshot, so the collection is not dirty, but it is still uninitialized and holds the new article
+
+        self::assertFalse($articles->isInitialized());
+        self::assertFalse($articles->isDirty());
+
+        $this->getEntityPreloader()->preload($categories, 'articles');
+        $this->getQueryLogger()->clear();
+
+        self::assertEqualsCanonicalizing(['Article#0', 'Article#1', 'NewArticle'], $this->getArticleTitles($categories[0]));
+        self::assertEqualsCanonicalizing(['Article#0', 'Article#1'], $this->getArticleTitles($categories[1]));
+
+        self::assertAggregatedQueries([]); // preloaded collections are initialized
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getArticleTitles(Category $category): array
+    {
+        return array_values(array_map(
+            static fn (Article $article): string => $article->getTitle(),
+            $category->getArticles()->toArray(),
+        ));
     }
 
     /**

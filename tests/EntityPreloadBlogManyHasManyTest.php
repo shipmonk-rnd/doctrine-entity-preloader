@@ -4,8 +4,10 @@ namespace ShipMonkTests\DoctrineEntityPreloader;
 
 use Doctrine\DBAL\Types\Type as DbalType;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\PersistentCollection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Article;
+use ShipMonkTests\DoctrineEntityPreloader\Fixtures\Blog\Tag;
 use ShipMonkTests\DoctrineEntityPreloader\Lib\TestCase;
 use function array_filter;
 use function array_map;
@@ -139,6 +141,43 @@ class EntityPreloadBlogManyHasManyTest extends TestCase
         self::assertCount(2, $tagLoadQueries);
         self::assertSame(1_000, substr_count($tagLoadQueries[0], '?'));
         self::assertSame(200, substr_count($tagLoadQueries[1], '?'));
+    }
+
+    #[DataProvider('providePrimaryKeyTypes')]
+    public function testManyHasManyWithPreloadOfUninitializedCollectionWithFlushedElement(DbalType $primaryKey): void
+    {
+        $this->createDummyBlogData($primaryKey, articleInEachCategoryCount: 2, tagForEachArticleCount: 2);
+
+        $articles = $this->getEntityManager()->getRepository(Article::class)->findAll();
+        $tags = $articles[0]->getTags();
+        self::assertInstanceOf(PersistentCollection::class, $tags);
+
+        $newTag = new Tag('NewTag');
+        $this->getEntityManager()->persist($newTag);
+        $tags->add($newTag); // does not initialize the collection
+        $this->getEntityManager()->flush(); // takes snapshot, so the collection is not dirty, but it is still uninitialized and holds the new tag
+
+        self::assertFalse($tags->isInitialized());
+        self::assertFalse($tags->isDirty());
+
+        $this->getEntityPreloader()->preload($articles, 'tags');
+        $this->getQueryLogger()->clear();
+
+        self::assertEqualsCanonicalizing(['NewTag', 'Tag#0', 'Tag#1'], $this->getTagLabels($articles[0]));
+        self::assertEqualsCanonicalizing(['Tag#0', 'Tag#1'], $this->getTagLabels($articles[1]));
+
+        self::assertAggregatedQueries([]); // preloaded collections are initialized
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getTagLabels(Article $article): array
+    {
+        return array_values(array_map(
+            static fn (Tag $tag): string => $tag->getLabel(),
+            $article->getTags()->toArray(),
+        ));
     }
 
     /**
