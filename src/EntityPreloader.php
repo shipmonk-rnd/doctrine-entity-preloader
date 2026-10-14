@@ -183,6 +183,7 @@ class EntityPreloader
                 && !$sourceEntityCollection->isInitialized()
                 && !$sourceEntityCollection->isDirty() // preloading dirty collection is too hard to handle
             ) {
+                $sourceEntityCollection->unwrap()->clear(); // may hold already flushed elements, which are loaded again (same as PersistentCollection::doInitialize)
                 $uninitializedSourceEntityIds[$sourceEntityKey] = $sourceEntityId;
                 $uninitializedCollections[$sourceEntityKey] = $sourceEntityCollection;
                 continue;
