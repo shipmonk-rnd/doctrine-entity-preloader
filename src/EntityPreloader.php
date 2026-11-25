@@ -487,6 +487,13 @@ class EntityPreloader
             throw new LogicException("Identifier field '{$identifierName}' for class '{$classMetadata->getName()}' has unknown field type.");
         }
 
+        $configuration = $this->entityManager->getConnection()->getConfiguration();
+
+        // @phpstan-ignore function.alreadyNarrowedType (DBAL < 4.6 has no type provider)
+        if (method_exists($configuration, 'getTypeProvider')) {
+            return $configuration->getTypeProvider()->get($sourceIdTypeName);
+        }
+
         return Type::getType($sourceIdTypeName);
     }
 
